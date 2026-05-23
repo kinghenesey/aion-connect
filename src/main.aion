@@ -1,0 +1,55 @@
+# AION Connect — Main Entry Point
+# AI-powered developer community platform
+
+use web
+use database
+use ai
+use datetime
+
+show "================================"
+show "  AION Connect v1.0.0"
+show "  Developer Community Platform"
+show "================================"
+show ""
+
+# Setup database
+db_connect("aion_connect.db")
+
+# Create tables
+db_create("ideas", "title text, description text, author text, tags text, upvotes integer, created text")
+db_create("comments", "idea_id integer, author text, content text, created text")
+db_create("users", "username text, bio text, github text, joined text")
+
+show "✓ Database connected"
+
+# Seed some sample ideas if empty
+total = db_count("ideas")
+
+if total == 0:
+    show "Seeding sample ideas..."
+    db_insert("ideas", "AI Resume Builder, Build an AI-powered resume generator using AION, Emmanuel, ai python tool, 12, 2026-05-01")
+    db_insert("ideas", "Nigerian Slang Translator, Translate Nigerian slang to formal English using AI, Emmanuel, ai nigeria language, 8, 2026-05-02")
+    db_insert("ideas", "AION Web IDE, Browser-based IDE for writing and running AION code online, Emmanuel, aion tool web, 24, 2026-05-03")
+    db_insert("ideas", "Student Grade Tracker, Track grades and get AI study tips, Emmanuel, education ai tool, 6, 2026-05-04")
+    db_insert("ideas", "Local Business Finder, Find local businesses in Nigerian cities, Emmanuel, nigeria business location, 15, 2026-05-05")
+    show "✓ Sample ideas added"
+
+total = db_count("ideas")
+show "Total ideas: " + to_text(total)
+show ""
+
+# Setup web routes
+web_app("AION Connect")
+
+# Serve the frontend
+web_route("/", "Welcome to AION Connect!")
+
+# API Routes
+web_route("/api/status", "AION Connect API is running!")
+
+web_route("/api/ideas/count", to_text(db_count("ideas")))
+
+show "✓ Routes configured"
+show ""
+show "Starting server..."
+web_start(5000)

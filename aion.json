@@ -1,0 +1,9 @@
+{
+  "name": "aion-connect",
+  "version": "1.0.0",
+  "description": "AION Connect - Developer Community Platform",
+  "main": "src/main.aion",
+  "author": "Emmanuel King Christopher",
+  "aion": "1.0.0",
+  "port": 5000
+}

@@ -1,0 +1,20 @@
+# AION Connect — Web Routes
+# Defines all API endpoints for the platform
+
+task setup_routes():
+    use web
+    use database
+    use datetime
+
+    db_connect("aion_connect.db")
+
+    # ── Home route ────────────────────────────────────────
+    web_route("/", "AION Connect - Developer Community")
+
+    # ── API: Get all ideas ────────────────────────────────
+    web_route("/api/ideas", "ideas")
+
+    # ── API: Get single idea ──────────────────────────────
+    web_route("/api/ideas/count", "count")
+
+    show "Routes ready!"

@@ -1,0 +1,16 @@
+# AION Connect — Database Setup
+# Sets up all tables needed for the platform
+
+task setup_database():
+    db_connect("aion_connect.db")
+
+    # Ideas table
+    db_create("ideas", "title text, description text, author text, tags text, upvotes integer, created text")
+
+    # Comments table
+    db_create("comments", "idea_id integer, author text, content text, created text")
+
+    # Users table
+    db_create("users", "username text, bio text, github text, joined text")
+
+    show "Database ready!"

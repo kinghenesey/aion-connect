@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Explore — AION Connect{% endblock %}
+
+{% block content %}
+<div class="page">
+<div class="container">
+
+  <div style="display:grid;grid-template-columns:240px 1fr;gap:28px">
+
+    <!-- Sidebar -->
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body" style="padding:16px">
+          <form action="/explore" method="GET">
+            <input type="text" name="q" class="form-input"
+                   placeholder="Search projects..."
+                   value="{{ search }}"
+                   style="margin-bottom:10px">
+            <button type="submit" class="btn btn-primary" style="width:100%">
+              Search
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);
+                    font-size:0.7rem;font-weight:700;color:var(--text1);
+                    letter-spacing:0.1em;text-transform:uppercase;
+                    font-family:var(--font-body)">
+          Popular Tags
+        </div>
+        <div style="padding:14px 18px;display:flex;flex-wrap:wrap;gap:6px">
+          {% for tag, count in popular_tags %}
+          <a href="/explore?tag={{ tag }}"
+             class="tag {% if tag == current_tag %}tag-ai{% else %}tag-general{% endif %}">
+            {{ tag }}
+            <span style="margin-left:4px;opacity:0.6">{{ count }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="margin-top:16px">
+        <div style="font-size:0.7rem;color:var(--text2);
+                    font-family:var(--font-body);margin-bottom:8px;
+                    font-weight:600;letter-spacing:0.08em;text-transform:uppercase">
+          Categories
+        </div>
+        {% for cat in ['ai','pipeline','vision','voice','web','database','general'] %}
+        <a href="/explore?tag={{ cat }}"
+           style="display:flex;align-items:center;gap:10px;
+                  padding:8px 12px;border-radius:var(--radius);
+                  text-decoration:none;margin-bottom:2px;
+                  transition:background 0.15s;
+                  {% if cat == current_tag %}background:var(--bg4);{% endif %}">
+          <span class="tag tag-{{ cat }}" style="pointer-events:none">{{ cat }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div>
+      <div style="display:flex;align-items:center;
+                  justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h1 style="font-family:var(--font-ui);font-size:1.4rem;
+                     font-weight:800;color:var(--text0)">
+            {% if search %}Results for "{{ search }}"
+            {% elif current_tag %}#{{ current_tag }}
+            {% else %}Explore Projects
+            {% endif %}
+          </h1>
+          <p style="font-size:0.75rem;color:var(--text2);
+                    margin-top:3px;font-family:var(--font-body)">
+            {{ total }} project{% if total != 1 %}s{% endif %} found
+          </p>
+        </div>
+        {% if search or current_tag %}
+        <a href="/explore" class="btn btn-ghost btn-sm">Clear filters</a>
+        {% endif %}
+      </div>
+
+      {% if projects %}
+      <div class="grid grid-3">
+        {% for p in projects %}
+        <div class="project-card" onclick="window.location='/project/{{ p.id }}'">
+          <div class="project-card-preview cat-{{ p.category }}">
+            <div class="project-card-preview-bg">{{ p.code[:300] }}</div>
+            <div class="project-card-overlay">
+              <a href="/project/{{ p.id }}" class="btn btn-primary btn-sm"
+                 onclick="event.stopPropagation()">View Project</a>
+            </div>
+          </div>
+          <div class="project-card-body">
+            <div>
+              <a href="/project/{{ p.id }}" class="project-title">{{ p.title }}</a>
+              <p class="project-desc" style="margin-top:5px">
+                {{ p.description or 'No description.' }}
+              </p>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap">
+              <span class="tag tag-{{ p.category }}">{{ p.category }}</span>
+              {% for tag in p.tag_list[:2] %}
+              <span class="tag tag-general">{{ tag }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="project-card-footer">
+            <a href="/profile/{{ p.author.username }}"
+               style="display:flex;align-items:center;gap:7px;
+                      text-decoration:none;color:var(--text1);
+                      font-size:0.72rem;font-family:var(--font-body)"
+               onclick="event.stopPropagation()">
+              <div class="avatar" style="width:22px;height:22px;font-size:0.58rem">
+                {{ p.author.username[0].upper() }}
+              </div>
+              {{ p.author.username }}
+            </a>
+            <div style="display:flex;gap:10px">
+              <span class="stat">♥ {{ p.like_count }}</span>
+              <span class="stat">↗ {{ p.views }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">
+        <div class="empty-icon">⌕</div>
+        <div class="empty-title">No projects found</div>
+        <div class="empty-desc">Try a different search or tag.</div>
+        <a href="/explore" class="btn btn-ghost" style="margin-top:8px">
+          Clear Search
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}

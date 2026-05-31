@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}{{ user.username }} — AION Connect{% endblock %}
+
+{% block styles %}
+<style>
+.profile-hero{
+  background:var(--bg2);
+  border-bottom:1px solid var(--border2);
+  padding:48px 0 0;
+  position:relative;overflow:hidden;
+}
+.profile-hero-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 30% 50%,
+    rgba(0,229,255,0.04) 0%,transparent 60%),
+    radial-gradient(ellipse at 70% 50%,
+    rgba(168,85,247,0.04) 0%,transparent 60%);
+  pointer-events:none;
+}
+.profile-tabs{
+  display:flex;gap:0;margin-top:24px;
+}
+.profile-tab{
+  padding:10px 20px;font-size:0.78rem;font-weight:600;
+  color:var(--text2);border-bottom:2px solid transparent;
+  cursor:pointer;transition:all 0.15s;
+  font-family:var(--font-body);text-decoration:none;
+}
+.profile-tab:hover{color:var(--text1);}
+.profile-tab.active{color:var(--text0);border-bottom-color:var(--cyan);}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Profile Hero -->
+<div class="profile-hero">
+  <div class="profile-hero-bg"></div>
+  <div class="container">
+    <div style="display:flex;align-items:flex-end;gap:24px;
+                flex-wrap:wrap;margin-bottom:24px">
+      <div class="avatar xl">{{ user.username[0].upper() }}</div>
+
+      <div style="flex:1;min-width:0">
+        <h1 style="font-family:var(--font-ui);font-size:1.8rem;
+                   font-weight:800;color:var(--text0);margin-bottom:4px">
+          {{ user.username }}
+        </h1>
+        {% if user.bio %}
+        <p style="font-size:0.85rem;color:var(--text1);
+                  line-height:1.6;max-width:500px;margin-bottom:12px;
+                  font-family:var(--font-body)">
+          {{ user.bio }}
+        </p>
+        {% endif %}
+
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          <span style="font-size:0.78rem;color:var(--text2);
+                       font-family:var(--font-body)">
+            Joined {{ user.created_at.strftime('%b %Y') }}
+          </span>
+          {% if user.github %}
+          <a href="https://github.com/{{ user.github }}" target="_blank"
+             style="font-size:0.78rem;color:var(--cyan);text-decoration:none">
+            GitHub →
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px;align-items:center">
+        {% if current_user.is_authenticated %}
+          {% if current_user.id == user.id %}
+          <a href="/settings" class="btn btn-ghost btn-sm">Edit Profile</a>
+          {% else %}
+          <button class="btn {% if is_following %}btn-ghost{% else %}btn-primary{% endif %} btn-sm"
+                  id="follow-btn"
+                  onclick="toggleFollow({{ user.id }})">
+            {% if is_following %}Following{% else %}Follow{% endif %}
+          </button>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div style="display:flex;gap:32px;margin-bottom:0;flex-wrap:wrap">
+      {% for val, label in [
+        (projects|length, 'Projects'),
+        (user.follower_count, 'Followers'),
+        (user.following_count, 'Following'),
+        (total_likes, 'Likes Received'),
+        (total_views, 'Total Views'),
+      ] %}
+      <div style="text-align:center">
+        <div style="font-family:var(--font-ui);font-size:1.3rem;
+                    font-weight:800;color:var(--text0)">{{ val }}</div>
+        <div style="font-size:0.65rem;color:var(--text2);
+                    letter-spacing:0.1em;font-family:var(--font-body);
+                    font-weight:600">{{ label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Tabs -->
+    <div class="profile-tabs">
+      <a href="#projects" class="profile-tab active">Projects</a>
+    </div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="page">
+<div class="container">
+  {% if projects %}
+  <div class="grid grid-3">
+    {% for p in projects %}
+    <div class="project-card" onclick="window.location='/project/{{ p.id }}'">
+      <div class="project-card-preview cat-{{ p.category }}">
+        <div class="project-card-preview-bg">{{ p.code[:300] }}</div>
+        <div class="project-card-overlay">
+          <a href="/project/{{ p.id }}" class="btn btn-primary btn-sm"
+             onclick="event.stopPropagation()">View</a>
+        </div>
+      </div>
+      <div class="project-card-body">
+        <div>
+          <a href="/project/{{ p.id }}" class="project-title">{{ p.title }}</a>
+          <p class="project-desc" style="margin-top:5px">
+            {{ p.description or 'No description.' }}
+          </p>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span class="tag tag-{{ p.category }}">{{ p.category }}</span>
+          {% for tag in p.tag_list[:2] %}
+          <span class="tag tag-general">{{ tag }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="project-card-footer">
+        <span style="font-size:0.68rem;color:var(--text2);font-family:var(--font-body)">
+          {{ p.created_at.strftime('%b %d, %Y') }}
+        </span>
+        <div style="display:flex;gap:10px">
+          <span class="stat">♥ {{ p.like_count }}</span>
+          <span class="stat">↗ {{ p.views }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon">◈</div>
+    <div class="empty-title">No projects yet</div>
+    <div class="empty-desc">
+      {% if current_user.is_authenticated and current_user.id == user.id %}
+      Share your first AION project with the community!
+      {% else %}
+      {{ user.username }} hasn't shared any projects yet.
+      {% endif %}
+    </div>
+    {% if current_user.is_authenticated and current_user.id == user.id %}
+    <a href="/post" class="btn btn-primary" style="margin-top:8px">+ Share Now</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleFollow(id){
+  const btn = document.getElementById('follow-btn');
+  const res = await fetch('/api/follow/'+id,{method:'POST'});
+  const data = await res.json();
+  btn.textContent = data.following ? 'Following' : 'Follow';
+  btn.className = (data.following
+    ? 'btn btn-ghost btn-sm'
+    : 'btn btn-primary btn-sm');
+}
+</script>
+{% endblock %}

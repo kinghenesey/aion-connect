@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Login — AION Connect{% endblock %}
+
+{% block content %}
+<div class="page" style="display:flex;align-items:center;justify-content:center;min-height:70vh">
+<div style="width:100%;max-width:400px;padding:0 24px">
+
+  <div style="text-align:center;margin-bottom:32px">
+    <div style="font-family:var(--font-ui);font-size:1.8rem;
+                font-weight:800;color:var(--cyan);
+                letter-spacing:0.1em;margin-bottom:6px">
+      AION
+    </div>
+    <h1 style="font-family:var(--font-ui);font-size:1.4rem;
+               font-weight:800;color:var(--text0);margin-bottom:6px">
+      Welcome back
+    </h1>
+    <p style="font-size:0.8rem;color:var(--text1);font-family:var(--font-body)">
+      Sign in to AION Connect
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="POST" action="/login">
+
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-input"
+                 placeholder="your username" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-input"
+                 placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:4px">
+          Sign In →
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+  <p style="text-align:center;margin-top:20px;font-size:0.78rem;
+            color:var(--text2);font-family:var(--font-body)">
+    Don't have an account?
+    <a href="/register" style="color:var(--cyan);text-decoration:none">
+      Join AION Connect
+    </a>
+  </p>
+
+  <div style="text-align:center;margin-top:32px;padding-top:20px;
+              border-top:1px solid var(--border)">
+    <p style="font-size:0.7rem;color:var(--text2);font-family:var(--font-body)">
+      Demo account:
+      <code style="color:var(--cyan);font-family:var(--font-mono)">
+        emmanuel / aion2026
+      </code>
+    </p>
+  </div>
+
+</div>
+</div>
+{% endblock %}

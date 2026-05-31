@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Share a Project — AION Connect{% endblock %}
+
+{% block content %}
+<div class="page">
+<div class="container-sm">
+
+  <div style="margin-bottom:32px">
+    <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.15em;
+                color:var(--cyan);font-family:var(--font-body);margin-bottom:8px">
+      SHARE YOUR WORK
+    </div>
+    <h1 style="font-family:var(--font-ui);font-size:2rem;
+               font-weight:800;color:var(--text0);margin-bottom:8px">
+      Post a Project
+    </h1>
+    <p style="font-size:0.85rem;color:var(--text1);font-family:var(--font-body)">
+      Share your AION code with the community.
+    </p>
+  </div>
+
+  <form method="POST" action="/post">
+    <div class="card">
+      <div class="card-body">
+
+        <div class="form-group">
+          <label class="form-label">Project Title *</label>
+          <input type="text" name="title" class="form-input"
+                 placeholder="e.g. AI Market Analyzer"
+                 maxlength="100" required>
+          <div class="form-hint">Make it descriptive and catchy</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-textarea"
+                    placeholder="What does this project do? What AION features does it use?"
+                    maxlength="500"></textarea>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select name="category" class="form-select">
+              <option value="general">general</option>
+              <option value="ai">ai</option>
+              <option value="pipeline">pipeline</option>
+              <option value="vision">vision</option>
+              <option value="voice">voice</option>
+              <option value="web">web</option>
+              <option value="database">database</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tags</label>
+            <input type="text" name="tags" class="form-input"
+                   placeholder="think, agents, nigeria">
+            <div class="form-hint">Comma separated</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">AION Code *</label>
+          <textarea name="code" class="code-editor"
+                    placeholder="# Write or paste your AION code here...
+think &quot;What should I build today?&quot;"
+                    required
+                    onkeydown="handleTab(event)"></textarea>
+          <div class="form-hint">
+            Paste your .aion code — supports all AION features
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div style="background:var(--bg2);border:1px solid var(--border2);
+                border-radius:var(--radius-lg);padding:16px 20px;
+                margin-top:16px;margin-bottom:24px">
+      <div style="font-size:0.68rem;font-weight:700;color:var(--text2);
+                  letter-spacing:0.1em;text-transform:uppercase;
+                  font-family:var(--font-body);margin-bottom:8px">
+        Quick Tips
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        {% for tip in [
+          ('think "prompt"', 'AI-native keyword'),
+          ('"seed" -> agent1 -> agent2', 'Agent pipeline'),
+          ('autonomous parallel:', 'Parallel execution'),
+          ('pipeline name:', 'Neural pipeline'),
+          ('memory block:', 'Persistent memory'),
+          ('sandbox strict:', 'Secure sandbox'),
+        ] %}
+        <div style="display:flex;align-items:center;gap:8px;
+                    padding:6px 10px;background:var(--bg3);
+                    border-radius:var(--radius);border:1px solid var(--border)">
+          <code style="font-size:0.68rem;color:var(--cyan);
+                       font-family:var(--font-mono)">{{ tip[0] }}</code>
+          <span style="font-size:0.65rem;color:var(--text2);
+                       font-family:var(--font-body)">{{ tip[1] }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end">
+      <a href="/" class="btn btn-ghost">Cancel</a>
+      <button type="submit" class="btn btn-primary">
+        Share Project →
+      </button>
+    </div>
+  </form>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function handleTab(e){
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const ta=e.target;
+    const s=ta.selectionStart;
+    ta.value=ta.value.substring(0,s)+'    '+ta.value.substring(ta.selectionEnd);
+    ta.selectionStart=ta.selectionEnd=s+4;
+  }
+}
+</script>
+{% endblock %}

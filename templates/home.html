@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}AION Connect — Feed{% endblock %}
+
+{% block styles %}
+<style>
+/* ── HERO ── */
+.hero{
+  position:relative;
+  padding:80px 0 60px;
+  text-align:center;
+  overflow:hidden;
+}
+
+.hero-glow{
+  position:absolute;
+  top:-100px;left:50%;
+  transform:translateX(-50%);
+  width:800px;height:600px;
+  background:radial-gradient(ellipse,rgba(0,229,255,0.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+
+.hero-glow-2{
+  position:absolute;
+  top:0;left:20%;
+  width:400px;height:400px;
+  background:radial-gradient(ellipse,rgba(168,85,247,0.04) 0%,transparent 70%);
+  pointer-events:none;
+}
+
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:0.68rem;font-weight:600;
+  letter-spacing:0.18em;color:var(--cyan);
+  border:1px solid rgba(0,229,255,0.2);
+  background:rgba(0,229,255,0.06);
+  padding:5px 14px;border-radius:20px;
+  margin-bottom:20px;
+  font-family:var(--font-body);
+}
+
+.hero-title{
+  font-family:var(--font-ui);
+  font-size:clamp(2.2rem,5vw,3.8rem);
+  font-weight:800;
+  color:var(--text0);
+  line-height:1.08;
+  margin-bottom:16px;
+  letter-spacing:-0.02em;
+}
+
+.hero-title .grad{
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.hero-sub{
+  font-size:0.95rem;color:var(--text1);
+  max-width:500px;margin:0 auto 32px;
+  line-height:1.75;font-family:var(--font-body);
+}
+
+.hero-actions{
+  display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+}
+
+/* ── STATS STRIP ── */
+.stats-strip{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  border:1px solid var(--border2);
+  border-radius:var(--radius-xl);
+  overflow:hidden;background:var(--bg2);
+  margin-bottom:40px;
+}
+
+.stat-cell{
+  padding:20px 24px;text-align:center;
+  position:relative;
+}
+
+.stat-cell:not(:last-child)::after{
+  content:'';position:absolute;
+  right:0;top:20%;height:60%;
+  width:1px;background:var(--border2);
+}
+
+.stat-num{
+  font-family:var(--font-ui);
+  font-size:2rem;font-weight:800;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  line-height:1;margin-bottom:4px;
+}
+
+.stat-label{
+  font-size:0.68rem;color:var(--text2);
+  letter-spacing:0.12em;text-transform:uppercase;
+  font-family:var(--font-body);font-weight:600;
+}
+
+/* ── SECTION HEADER ── */
+.section-header{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  margin-bottom:24px;flex-wrap:wrap;gap:12px;
+}
+
+.section-title{
+  font-family:var(--font-ui);
+  font-size:1.1rem;font-weight:800;
+  color:var(--text0);
+}
+
+/* ── FEATURED CARD (large) ── */
+.featured-card{
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:var(--radius-xl);
+  overflow:hidden;
+  display:grid;grid-template-columns:1fr 1fr;
+  transition:all 0.25s;margin-bottom:28px;
+}
+.featured-card:hover{
+  border-color:var(--border3);
+  box-shadow:0 20px 60px rgba(0,0,0,0.4);
+  transform:translateY(-3px);
+}
+.featured-code{
+  padding:32px;
+  font-family:var(--font-mono);
+  font-size:13px;line-height:1.75;
+  color:#b0b0d0;
+  border-right:1px solid var(--border);
+  overflow:hidden;
+}
+.featured-info{
+  padding:32px;
+  display:flex;flex-direction:column;gap:14px;
+}
+.featured-label{
+  font-size:0.62rem;font-weight:700;
+  letter-spacing:0.15em;color:var(--cyan);
+  text-transform:uppercase;font-family:var(--font-body);
+}
+
+@media(max-width:768px){
+  .featured-card{grid-template-columns:1fr;}
+  .featured-code{display:none;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-glow-2"></div>
+
+    <div class="hero-eyebrow">
+      ⬡ AION CONNECT — AI-Native Community
+    </div>
+
+    <h1 class="hero-title">
+      Build with AI.<br>
+      <span class="grad">Share with the world.</span>
+    </h1>
+
+    <p class="hero-sub">
+      The community where developers share, discover and discuss
+      AI-native programs written in AION — the language where
+      <code style="color:var(--cyan);font-family:var(--font-mono)">think</code> is syntax.
+    </p>
+
+    <div class="hero-actions">
+      {% if not current_user.is_authenticated %}
+      <a href="/register" class="btn btn-primary">Join AION Connect →</a>
+      <a href="/explore" class="btn btn-ghost">Browse Projects</a>
+      {% else %}
+      <a href="/post" class="btn btn-primary">+ Share a Project</a>
+      <a href="/explore" class="btn btn-ghost">Explore All</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-strip">
+    <div class="stat-cell">
+      <div class="stat-num">{{ stats.projects }}</div>
+      <div class="stat-label">Projects Shared</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">{{ stats.users }}</div>
+      <div class="stat-label">Developers</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">{{ stats.likes }}</div>
+      <div class="stat-label">Total Likes</div>
+    </div>
+  </div>
+
+  {% if projects %}
+  <!-- Featured Project -->
+  {% set featured = projects[0] %}
+  <a href="/project/{{ featured.id }}" style="text-decoration:none;display:block">
+  <div class="featured-card cat-{{ featured.category }}">
+    <div class="featured-code">{{ featured.code[:400] }}</div>
+    <div class="featured-info">
+      <div class="featured-label">✦ Featured Project</div>
+      <h2 style="font-family:var(--font-ui);font-size:1.5rem;
+                 font-weight:800;color:var(--text0);line-height:1.2">
+        {{ featured.title }}
+      </h2>
+      <p style="font-size:0.82rem;color:var(--text1);line-height:1.7">
+        {{ featured.description or 'No description.' }}
+      </p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="tag tag-{{ featured.category }}">{{ featured.category }}</span>
+        {% for tag in featured.tag_list[:3] %}
+        <span class="tag tag-general">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:auto;padding-top:8px">
+        <a href="/profile/{{ featured.author.username }}"
+           style="display:flex;align-items:center;gap:8px;
+                  text-decoration:none;color:var(--text1);font-size:0.78rem">
+          <div class="avatar" style="width:28px;height:28px;font-size:0.65rem">
+            {{ featured.author.username[0].upper() }}
+          </div>
+          {{ featured.author.username }}
+        </a>
+        <span class="stat">♥ {{ featured.like_count }}</span>
+        <span class="stat">↗ {{ featured.views }} views</span>
+      </div>
+    </div>
+  </div>
+  </a>
+  {% endif %}
+
+  <!-- Filters -->
+  <div class="section-header">
+    <div class="pill-filter">
+      {% for cat in categories %}
+      <a href="/?category={{ cat }}&sort={{ current_sort }}"
+         class="pill {% if cat == current_category %}active{% endif %}">
+        {{ cat }}
+      </a>
+      {% endfor %}
+    </div>
+
+    <div style="display:flex;gap:6px">
+      {% for s, label in [('latest','Latest'),('popular','Popular'),('trending','Trending')] %}
+      <a href="/?category={{ current_category }}&sort={{ s }}"
+         class="pill {% if s == current_sort %}active{% endif %}">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Projects Grid -->
+  {% if projects %}
+  <div class="grid grid-3">
+    {% for p in projects %}
+    <div class="project-card" onclick="window.location='/project/{{ p.id }}'">
+
+      <!-- Preview -->
+      <div class="project-card-preview cat-{{ p.category }}">
+        <div class="project-card-preview-bg">{{ p.code[:300] }}</div>
+        <div class="project-card-overlay">
+          <a href="/project/{{ p.id }}" class="btn btn-primary btn-sm"
+             onclick="event.stopPropagation()">View Project</a>
+          <a href="/profile/{{ p.author.username }}" class="btn btn-ghost btn-sm"
+             onclick="event.stopPropagation()">{{ p.author.username }}</a>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="project-card-body">
+        <div>
+          <a href="/project/{{ p.id }}" class="project-title">{{ p.title }}</a>
+          <p class="project-desc" style="margin-top:5px">
+            {{ p.description or 'No description.' }}
+          </p>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span class="tag tag-{{ p.category }}">{{ p.category }}</span>
+          {% for tag in p.tag_list[:2] %}
+          <span class="tag tag-general">{{ tag }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="project-card-footer">
+        <a href="/profile/{{ p.author.username }}"
+           style="display:flex;align-items:center;gap:7px;
+                  text-decoration:none;color:var(--text1);
+                  font-size:0.72rem;font-family:var(--font-body)"
+           onclick="event.stopPropagation()">
+          <div class="avatar" style="width:22px;height:22px;font-size:0.58rem">
+            {{ p.author.username[0].upper() }}
+          </div>
+          {{ p.author.username }}
+        </a>
+        <div style="display:flex;gap:10px">
+          <span class="stat">♥ {{ p.like_count }}</span>
+          <span class="stat">◎ {{ p.comment_count }}</span>
+          <span class="stat">↗ {{ p.views }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon">◈</div>
+    <div class="empty-title">No projects yet</div>
+    <div class="empty-desc">Be the first to share an AION project with the community!</div>
+    <a href="/post" class="btn btn-primary" style="margin-top:8px">+ Share Now</a>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+{% block title %}{{ project.title }} — AION Connect{% endblock %}
+
+{% block styles %}
+<style>
+.project-hero{
+  background:var(--bg2);
+  border-bottom:1px solid var(--border2);
+  padding:40px 0;
+}
+.back-link{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:0.75rem;color:var(--text2);
+  text-decoration:none;margin-bottom:24px;
+  transition:color 0.15s;font-family:var(--font-body);
+}
+.back-link:hover{color:var(--cyan);}
+.like-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 20px;border-radius:var(--radius);
+  font-size:0.78rem;font-weight:600;
+  border:1px solid var(--border2);
+  background:var(--bg3);color:var(--text1);
+  cursor:pointer;transition:all 0.18s;
+  font-family:var(--font-body);
+}
+.like-btn:hover{border-color:var(--pink);color:var(--pink);}
+.like-btn.liked{background:var(--pink-dim);border-color:var(--pink);color:var(--pink);}
+.comment-box{
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;
+}
+.comment-input{
+  width:100%;background:var(--bg4);
+  border:1px solid var(--border2);border-radius:var(--radius);
+  color:var(--text0);font-family:var(--font-body);
+  font-size:0.82rem;padding:10px 14px;
+  outline:none;resize:none;min-height:80px;
+  transition:border-color 0.15s;
+}
+.comment-input:focus{border-color:var(--cyan);}
+.comment{
+  padding:16px 0;border-bottom:1px solid var(--border);
+  display:flex;gap:12px;
+}
+.comment:last-child{border-bottom:none;}
+.sidebar-card{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--radius-lg);overflow:hidden;
+  margin-bottom:20px;
+}
+.sidebar-card-header{
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  font-size:0.72rem;font-weight:700;color:var(--text1);
+  letter-spacing:0.08em;text-transform:uppercase;
+  font-family:var(--font-body);
+}
+.sidebar-card-body{padding:16px 18px;}
+.related-item{
+  padding:10px 0;border-bottom:1px solid var(--border);
+  display:flex;gap:10px;align-items:flex-start;
+}
+.related-item:last-child{border-bottom:none;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="project-hero">
+<div class="container">
+  <a href="/" class="back-link">← Back to Feed</a>
+
+  <div style="display:flex;align-items:flex-start;
+              justify-content:space-between;gap:24px;flex-wrap:wrap">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <span class="tag tag-{{ project.category }}">{{ project.category }}</span>
+        {% for tag in project.tag_list %}
+        <a href="/explore?tag={{ tag }}" class="tag tag-general">{{ tag }}</a>
+        {% endfor %}
+      </div>
+
+      <h1 style="font-family:var(--font-ui);font-size:2rem;
+                 font-weight:800;color:var(--text0);line-height:1.2;
+                 margin-bottom:10px">
+        {{ project.title }}
+      </h1>
+
+      <p style="font-size:0.88rem;color:var(--text1);
+                line-height:1.7;max-width:600px;margin-bottom:20px">
+        {{ project.description or 'No description provided.' }}
+      </p>
+
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <a href="/profile/{{ project.author.username }}"
+           style="display:flex;align-items:center;gap:9px;
+                  text-decoration:none;color:var(--text1);font-size:0.82rem;
+                  font-family:var(--font-body)">
+          <div class="avatar">{{ project.author.username[0].upper() }}</div>
+          <div>
+            <div style="color:var(--text0);font-weight:600">{{ project.author.username }}</div>
+            <div style="font-size:0.68rem;color:var(--text2)">
+              {{ project.created_at.strftime('%b %d, %Y') }}
+            </div>
+          </div>
+        </a>
+
+        <div style="display:flex;gap:16px">
+          <span class="stat">↗ {{ project.views }} views</span>
+          <span class="stat">◎ {{ project.comment_count }} comments</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end">
+      {% if current_user.is_authenticated %}
+      <button class="like-btn {% if liked %}liked{% endif %}"
+              id="like-btn"
+              onclick="toggleLike({{ project.id }})">
+        <span id="like-icon">{% if liked %}♥{% else %}♡{% endif %}</span>
+        <span id="like-count">{{ project.like_count }}</span>
+        <span>{% if liked %}Liked{% else %}Like{% endif %}</span>
+      </button>
+      {% else %}
+      <a href="/login" class="btn btn-ghost">♡ {{ project.like_count }} Likes</a>
+      {% endif %}
+
+      {% if current_user.is_authenticated and current_user.id == project.user_id %}
+      <form method="POST" action="/project/{{ project.id }}/delete"
+            onsubmit="return confirm('Delete this project?')">
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="page">
+<div class="container">
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:28px">
+
+    <!-- Main -->
+    <div>
+      <!-- Code -->
+      <div style="margin-bottom:28px">
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    margin-bottom:12px">
+          <h2 style="font-family:var(--font-ui);font-size:1rem;
+                     font-weight:700;color:var(--text0)">Source Code</h2>
+          <button class="btn btn-ghost btn-sm" onclick="copyCode()">Copy</button>
+        </div>
+        <div class="code-block" id="code-block">{{ project.code }}</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Comments -->
+      <div>
+        <h2 style="font-family:var(--font-ui);font-size:1rem;
+                   font-weight:700;color:var(--text0);margin-bottom:16px">
+          Comments ({{ project.comment_count }})
+        </h2>
+
+        {% if current_user.is_authenticated %}
+        <div class="comment-box">
+          <textarea class="comment-input" id="comment-input"
+                    placeholder="Share your thoughts about this project..."></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:10px">
+            <button class="btn btn-primary btn-sm"
+                    onclick="submitComment({{ project.id }})">
+              Post Comment
+            </button>
+          </div>
+        </div>
+        {% else %}
+        <div style="padding:16px;background:var(--bg3);border:1px solid var(--border2);
+                    border-radius:var(--radius-lg);margin-bottom:20px;
+                    font-size:0.78rem;color:var(--text1);text-align:center">
+          <a href="/login" style="color:var(--cyan)">Login</a> to leave a comment
+        </div>
+        {% endif %}
+
+        <div id="comments-list">
+          {% for comment in comments %}
+          <div class="comment">
+            <a href="/profile/{{ comment.author.username }}" class="avatar"
+               style="flex-shrink:0">
+              {{ comment.author.username[0].upper() }}
+            </a>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">
+                <a href="/profile/{{ comment.author.username }}"
+                   style="font-size:0.8rem;font-weight:600;color:var(--text0);
+                          text-decoration:none;font-family:var(--font-body)">
+                  {{ comment.author.username }}
+                </a>
+                <span style="font-size:0.68rem;color:var(--text2)">
+                  {{ comment.created_at.strftime('%b %d, %Y') }}
+                </span>
+              </div>
+              <p style="font-size:0.82rem;color:var(--text1);
+                        line-height:1.6;font-family:var(--font-body)">
+                {{ comment.body }}
+              </p>
+            </div>
+          </div>
+          {% else %}
+          <div style="text-align:center;padding:32px;color:var(--text2);
+                      font-size:0.78rem">
+            No comments yet. Be the first!
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div>
+      <!-- Author -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Author</div>
+        <div class="sidebar-card-body">
+          <a href="/profile/{{ project.author.username }}"
+             style="display:flex;align-items:center;gap:12px;
+                    text-decoration:none;margin-bottom:14px">
+            <div class="avatar lg">{{ project.author.username[0].upper() }}</div>
+            <div>
+              <div style="font-weight:700;color:var(--text0);
+                          font-family:var(--font-ui)">
+                {{ project.author.username }}
+              </div>
+              <div style="font-size:0.72rem;color:var(--text2)">
+                {{ project.author.project_count }} projects
+              </div>
+            </div>
+          </a>
+          {% if project.author.bio %}
+          <p style="font-size:0.78rem;color:var(--text1);
+                    line-height:1.6;margin-bottom:14px;
+                    font-family:var(--font-body)">
+            {{ project.author.bio }}
+          </p>
+          {% endif %}
+          {% if current_user.is_authenticated and current_user.id != project.author.id %}
+          <button class="btn btn-primary" style="width:100%"
+                  id="follow-btn"
+                  onclick="toggleFollow({{ project.author.id }})">
+            Follow
+          </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Stats</div>
+        <div class="sidebar-card-body">
+          {% for label, val in [('Views', project.views), ('Likes', project.like_count), ('Comments', project.comment_count)] %}
+          <div style="display:flex;justify-content:space-between;
+                      padding:7px 0;border-bottom:1px solid var(--border);
+                      font-size:0.78rem;font-family:var(--font-body)">
+            <span style="color:var(--text2)">{{ label }}</span>
+            <span style="color:var(--text0);font-weight:600">{{ val }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Related -->
+      {% if related %}
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Related Projects</div>
+        <div class="sidebar-card-body" style="padding:8px 18px">
+          {% for r in related %}
+          <div class="related-item">
+            <div style="width:36px;height:36px;border-radius:8px;
+                        flex-shrink:0;overflow:hidden"
+                 class="cat-{{ r.category }}">
+            </div>
+            <div style="flex:1;min-width:0">
+              <a href="/project/{{ r.id }}"
+                 style="font-size:0.78rem;font-weight:600;
+                        color:var(--text0);text-decoration:none;
+                        display:block;font-family:var(--font-ui)">
+                {{ r.title }}
+              </a>
+              <span style="font-size:0.65rem;color:var(--text2)">
+                ♥ {{ r.like_count }}
+              </span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleLike(id){
+  const btn = document.getElementById('like-btn');
+  const icon = document.getElementById('like-icon');
+  const count = document.getElementById('like-count');
+  const res = await fetch('/api/like/'+id,{method:'POST'});
+  const data = await res.json();
+  if(data.liked){
+    btn.classList.add('liked');
+    icon.textContent='♥';
+    btn.querySelector('span:last-child').textContent='Liked';
+  }else{
+    btn.classList.remove('liked');
+    icon.textContent='♡';
+    btn.querySelector('span:last-child').textContent='Like';
+  }
+  count.textContent=data.count;
+}
+
+async function submitComment(id){
+  const input = document.getElementById('comment-input');
+  const body = input.value.trim();
+  if(!body) return;
+  const res = await fetch('/api/comment/'+id,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({body})
+  });
+  const data = await res.json();
+  if(data.error) return alert(data.error);
+  const list = document.getElementById('comments-list');
+  const div = document.createElement('div');
+  div.className='comment';
+  div.innerHTML=`
+    <div class="avatar" style="flex-shrink:0">${data.username[0].toUpperCase()}</div>
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">
+        <span style="font-size:0.8rem;font-weight:600;color:var(--text0);font-family:var(--font-body)">${data.username}</span>
+        <span style="font-size:0.68rem;color:var(--text2)">${data.time}</span>
+      </div>
+      <p style="font-size:0.82rem;color:var(--text1);line-height:1.6;font-family:var(--font-body)">${data.body}</p>
+    </div>`;
+  list.appendChild(div);
+  input.value='';
+}
+
+async function toggleFollow(id){
+  const btn = document.getElementById('follow-btn');
+  const res = await fetch('/api/follow/'+id,{method:'POST'});
+  const data = await res.json();
+  btn.textContent = data.following ? 'Following' : 'Follow';
+  btn.className = data.following ? 'btn btn-ghost' : 'btn btn-primary';
+  btn.style.width='100%';
+}
+
+function copyCode(){
+  const code = document.getElementById('code-block').textContent;
+  navigator.clipboard.writeText(code).then(()=>{
+    const btn = event.target;
+    btn.textContent='Copied!';
+    setTimeout(()=>btn.textContent='Copy',2000);
+  });
+}
+</script>
+{% endblock %}

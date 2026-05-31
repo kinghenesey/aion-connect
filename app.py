@@ -11,7 +11,7 @@ from flask_login import (LoginManager, login_required,
 from flask_bcrypt import Bcrypt
 from flask_socketio import SocketIO, emit, join_room
 from dotenv import load_dotenv
-from database import db, User, Project, Comment, Like, Follow, Message
+from database import db, User, Project, Comment, Like, Follow, Message, Notification
 from auth import auth, bcrypt
 
 load_dotenv()
@@ -19,6 +19,20 @@ load_dotenv()
 # ── App Factory ───────────────────────────────────────────────
 
 socketio = SocketIO()
+
+def create_notification(user_id, actor_id, type, message, link=""):
+    """Create a notification for a user."""
+    if user_id == actor_id:
+        return  # Don't notify yourself
+    notif = Notification(
+        user_id=user_id,
+        actor_id=actor_id,
+        type=type,
+        message=message,
+        link=link
+    )
+    db.session.add(notif)
+    db.session.commit()
 
 def create_app():
     app = Flask(__name__)
@@ -360,6 +374,13 @@ def like_project(project_id):
                     project_id=project_id)
         db.session.add(like)
         db.session.commit()
+        create_notification(
+            user_id=p.user_id,
+            actor_id=current_user.id,
+            type="like",
+            message=f"{current_user.username} liked your project '{p.title}'",
+            link=f"/project/{p.id}"
+        )
         return jsonify({"liked": True, "count": p.like_count})
 
 
@@ -368,7 +389,7 @@ def like_project(project_id):
 @main.route("/api/comment/<int:project_id>", methods=["POST"])
 @login_required
 def add_comment(project_id):
-    Project.query.get_or_404(project_id)
+    p    = Project.query.get_or_404(project_id)
     body = request.json.get("body", "").strip()
 
     if not body or len(body) > 500:
@@ -381,6 +402,14 @@ def add_comment(project_id):
     )
     db.session.add(comment)
     db.session.commit()
+
+    create_notification(
+        user_id=p.user_id,
+        actor_id=current_user.id,
+        type="comment",
+        message=f"{current_user.username} commented on '{p.title}'",
+        link=f"/project/{p.id}"
+    )
 
     return jsonify({
         "id":       comment.id,
@@ -419,10 +448,64 @@ def follow_user(user_id):
         )
         db.session.add(follow)
         db.session.commit()
+        create_notification(
+            user_id=user_id,
+            actor_id=current_user.id,
+            type="follow",
+            message=f"{current_user.username} started following you",
+            link=f"/profile/{current_user.username}"
+        )
         return jsonify({
             "following": True,
             "count": user.follower_count
         })
+
+# ── Notifications ─────────────────────────────────────────────
+
+@main.route("/notifications")
+@login_required
+def notifications():
+    notifs = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).limit(50).all()
+
+    # Mark all as read
+    Notification.query.filter_by(
+        user_id=current_user.id,
+        is_read=False
+    ).update({"is_read": True})
+    db.session.commit()
+
+    return render_template("notifications.html", notifications=notifs)
+
+
+@main.route("/api/notifications/unread")
+@login_required
+def unread_notifications():
+    count = Notification.query.filter_by(
+        user_id=current_user.id,
+        is_read=False
+    ).count()
+    notifs = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(
+        Notification.created_at.desc()
+    ).limit(5).all()
+    return jsonify({
+        "count": count,
+        "notifications": [n.to_dict() for n in notifs]
+    })
+
+
+@main.route("/api/notifications/read-all", methods=["POST"])
+@login_required
+def read_all_notifications():
+    Notification.query.filter_by(
+        user_id=current_user.id,
+        is_read=False
+    ).update({"is_read": True})
+    db.session.commit()
+    return jsonify({"success": True})
 
 
 # ── API: Run Code ─────────────────────────────────────────────

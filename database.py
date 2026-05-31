@@ -180,3 +180,43 @@ class Message(db.Model):
             "time":     self.created_at.strftime("%H:%M"),
             "date":     self.created_at.strftime("%b %d"),
         }
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer,
+                            db.ForeignKey("users.id"),
+                            nullable=False)
+    actor_id   = db.Column(db.Integer,
+                            db.ForeignKey("users.id"),
+                            nullable=False)
+    type       = db.Column(db.String(20), nullable=False)
+    # types: "like", "comment", "follow"
+    project_id = db.Column(db.Integer,
+                            db.ForeignKey("projects.id"),
+                            nullable=True)
+    message    = db.Column(db.String(200), nullable=False)
+    is_read    = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime,
+                            default=datetime.utcnow)
+
+    # Relationships
+    user    = db.relationship("User",
+                               foreign_keys=[user_id],
+                               backref="notifications")
+    actor   = db.relationship("User",
+                               foreign_keys=[actor_id])
+    project = db.relationship("Project")
+
+    def to_dict(self):
+        return {
+            "id":         self.id,
+            "type":       self.type,
+            "message":    self.message,
+            "is_read":    self.is_read,
+            "time":       self.created_at.strftime("%b %d, %Y"),
+            "project_id": self.project_id,
+            "actor":      self.actor.username,
+            "avatar":     self.actor.avatar or "",
+        }

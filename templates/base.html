@@ -464,7 +464,7 @@ body{
     <a href="/explore" class="nav-link {% if request.endpoint == 'main.explore' %}active{% endif %}">Explore</a>
     <a href="/chat" class="nav-link {% if request.endpoint == 'main.chat' %}active{% endif %}">Chat</a>
     {% if current_user.is_authenticated %}
-    <a href="/post" class="nav-link {% if request.endpoint == 'main.post' %}active{% endif %}">Share</a>
+      <a href="/post" class="nav-link {% if request.endpoint == 'main.post' %}active{% endif %}">Share</a>
     {% endif %}
   </div>
 
@@ -475,15 +475,53 @@ body{
         <input type="text" name="q" placeholder="Search projects..." value="{{ request.args.get('q', '') }}">
       </form>
     </div>
-    {% if current_user.is_authenticated %}
+    
+        {% if current_user.is_authenticated %}
       <a href="/post" class="btn btn-primary btn-sm">+ Share</a>
-      <a href="/profile/{{ current_user.username }}" class="avatar">{{ current_user.username[0].upper() }}</a>
+
+      <!-- Notification Bell -->
+      <div style="position:relative">
+        <a href="/notifications"
+           style="width:34px;height:34px;border-radius:var(--radius);
+                  background:var(--bg3);border:1px solid var(--border2);
+                  display:flex;align-items:center;justify-content:center;
+                  text-decoration:none;color:var(--text1);font-size:1rem;
+                  transition:all 0.15s"
+           onmouseover="this.style.borderColor='var(--border3)';this.style.color='var(--text0)'"
+           onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text1)'"
+           id="notif-bell">
+          🔔
+        </a>
+        <div id="notif-badge"
+             style="position:absolute;top:-5px;right:-5px;
+                    background:var(--red);color:#fff;
+                    font-size:0.55rem;font-weight:800;
+                    min-width:16px;height:16px;border-radius:8px;
+                    display:none;align-items:center;justify-content:center;
+                    font-family:var(--font-body);padding:0 4px;
+                    border:2px solid var(--bg0)">
+          0
+        </div>
+      </div>
+
+      <!-- Avatar -->
+      <a href="/profile/{{ current_user.username }}"
+         class="avatar" style="overflow:hidden;padding:0">
+        {% if current_user.avatar %}
+        <img src="/static/uploads/{{ current_user.avatar }}"
+             alt="{{ current_user.username }}"
+             style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+        {% else %}
+        {{ current_user.username[0].upper() }}
+        {% endif %}
+      </a>
+
     {% else %}
       <a href="/login" class="btn btn-ghost btn-sm">Login</a>
       <a href="/register" class="btn btn-primary btn-sm">Join Free</a>
     {% endif %}
   </div>
-</nav>
+</nav>  
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
@@ -519,6 +557,51 @@ setTimeout(()=>{
     setTimeout(()=>f.remove(),300);
   });
 },3500);
+</script>
+
+<script>
+// Poll for unread notifications every 30 seconds
+{% if current_user.is_authenticated %}
+async function checkNotifications(){
+  try{
+    const res  = await fetch('/api/notifications/unread');
+    const data = await res.json();
+    const badge = document.getElementById('notif-badge');
+    if(badge){
+      if(data.count > 0){
+        badge.style.display = 'flex';
+        badge.textContent   = data.count > 9 ? '9+' : data.count;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  } catch(e){}
+}
+checkNotifications();
+setInterval(checkNotifications, 30000);
+{% endif %}
+</script>
+
+<script>
+{% if current_user.is_authenticated %}
+async function checkNotifications(){
+  try{
+    const res  = await fetch('/api/notifications/unread');
+    const data = await res.json();
+    const badge = document.getElementById('notif-badge');
+    if(badge){
+      if(data.count > 0){
+        badge.style.display='flex';
+        badge.textContent=data.count > 9 ? '9+' : data.count;
+      } else {
+        badge.style.display='none';
+      }
+    }
+  } catch(e){}
+}
+checkNotifications();
+setInterval(checkNotifications, 30000);
+{% endif %}
 </script>
 
 {% block scripts %}{% endblock %}

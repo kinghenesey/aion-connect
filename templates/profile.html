@@ -17,14 +17,11 @@
     rgba(168,85,247,0.04) 0%,transparent 60%);
   pointer-events:none;
 }
-.profile-tabs{
-  display:flex;gap:0;margin-top:24px;
-}
 .profile-tab{
   padding:10px 20px;font-size:0.78rem;font-weight:600;
   color:var(--text2);border-bottom:2px solid transparent;
-  cursor:pointer;transition:all 0.15s;
-  font-family:var(--font-body);text-decoration:none;
+  transition:all 0.15s;font-family:var(--font-body);
+  text-decoration:none;display:inline-block;
 }
 .profile-tab:hover{color:var(--text1);}
 .profile-tab.active{color:var(--text0);border-bottom-color:var(--cyan);}
@@ -32,13 +29,21 @@
 {% endblock %}
 
 {% block content %}
-<!-- Profile Hero -->
 <div class="profile-hero">
   <div class="profile-hero-bg"></div>
   <div class="container">
     <div style="display:flex;align-items:flex-end;gap:24px;
                 flex-wrap:wrap;margin-bottom:24px">
-      <div class="avatar xl">{{ user.username[0].upper() }}</div>
+
+      <div class="avatar xl" style="overflow:hidden;padding:0">
+        {% if user.avatar %}
+        <img src="/static/uploads/{{ user.avatar }}"
+             alt="{{ user.username }}"
+             style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+        {% else %}
+        {{ user.username[0].upper() }}
+        {% endif %}
+      </div>
 
       <div style="flex:1;min-width:0">
         <h1 style="font-family:var(--font-ui);font-size:1.8rem;
@@ -52,7 +57,6 @@
           {{ user.bio }}
         </p>
         {% endif %}
-
         <div style="display:flex;gap:20px;flex-wrap:wrap">
           <span style="font-size:0.78rem;color:var(--text2);
                        font-family:var(--font-body)">
@@ -64,10 +68,15 @@
             GitHub →
           </a>
           {% endif %}
+          {% if user.website %}
+          <a href="{{ user.website }}" target="_blank"
+             style="font-size:0.78rem;color:var(--cyan);text-decoration:none">
+            Website →
+          </a>
+          {% endif %}
         </div>
       </div>
 
-      <!-- Actions -->
       <div style="display:flex;gap:10px;align-items:center">
         {% if current_user.is_authenticated %}
           {% if current_user.id == user.id %}
@@ -84,32 +93,31 @@
     </div>
 
     <!-- Stats Row -->
-    <div style="display:flex;gap:32px;margin-bottom:0;flex-wrap:wrap">
+    <div style="display:flex;gap:32px;flex-wrap:wrap;margin-bottom:4px">
       {% for val, label in [
         (projects|length, 'Projects'),
         (user.follower_count, 'Followers'),
         (user.following_count, 'Following'),
-        (total_likes, 'Likes Received'),
-        (total_views, 'Total Views'),
+        (total_likes, 'Likes'),
+        (total_views, 'Views'),
       ] %}
-      <div style="text-align:center">
+      <div>
         <div style="font-family:var(--font-ui);font-size:1.3rem;
                     font-weight:800;color:var(--text0)">{{ val }}</div>
         <div style="font-size:0.65rem;color:var(--text2);
                     letter-spacing:0.1em;font-family:var(--font-body);
-                    font-weight:600">{{ label }}</div>
+                    font-weight:600;text-transform:uppercase">{{ label }}</div>
       </div>
       {% endfor %}
     </div>
 
-    <!-- Tabs -->
-    <div class="profile-tabs">
-      <a href="#projects" class="profile-tab active">Projects</a>
+    <!-- Tab -->
+    <div style="display:flex;margin-top:16px">
+      <a href="#" class="profile-tab active">Projects</a>
     </div>
   </div>
 </div>
 
-<!-- Content -->
 <div class="page">
 <div class="container">
   {% if projects %}
@@ -138,7 +146,8 @@
         </div>
       </div>
       <div class="project-card-footer">
-        <span style="font-size:0.68rem;color:var(--text2);font-family:var(--font-body)">
+        <span style="font-size:0.68rem;color:var(--text2);
+                     font-family:var(--font-body)">
           {{ p.created_at.strftime('%b %d, %Y') }}
         </span>
         <div style="display:flex;gap:10px">
@@ -155,13 +164,15 @@
     <div class="empty-title">No projects yet</div>
     <div class="empty-desc">
       {% if current_user.is_authenticated and current_user.id == user.id %}
-      Share your first AION project with the community!
+      Share your first AION project!
       {% else %}
       {{ user.username }} hasn't shared any projects yet.
       {% endif %}
     </div>
     {% if current_user.is_authenticated and current_user.id == user.id %}
-    <a href="/post" class="btn btn-primary" style="margin-top:8px">+ Share Now</a>
+    <a href="/post" class="btn btn-primary" style="margin-top:8px">
+      + Share Now
+    </a>
     {% endif %}
   </div>
   {% endif %}
@@ -172,13 +183,13 @@
 {% block scripts %}
 <script>
 async function toggleFollow(id){
-  const btn = document.getElementById('follow-btn');
-  const res = await fetch('/api/follow/'+id,{method:'POST'});
+  const btn  = document.getElementById('follow-btn');
+  const res  = await fetch('/api/follow/'+id,{method:'POST'});
   const data = await res.json();
   btn.textContent = data.following ? 'Following' : 'Follow';
-  btn.className = (data.following
+  btn.className   = data.following
     ? 'btn btn-ghost btn-sm'
-    : 'btn btn-primary btn-sm');
+    : 'btn btn-primary btn-sm';
 }
 </script>
 {% endblock %}

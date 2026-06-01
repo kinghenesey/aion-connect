@@ -512,22 +512,113 @@ def read_all_notifications():
 
 @main.route("/api/run", methods=["POST"])
 def run_code():
+    """Run AION code using AION's venv Python."""
+    import subprocess
+    import tempfile
+    import time
+    import sys as _sys
+
     code = request.json.get("code", "")
     if not code.strip():
-        return jsonify({"output": "", "error": None})
+        return jsonify({"output": "", "error": None, "time": 0})
 
-    lines = code.split("\n")
-    outputs = []
-    for line in lines:
-        line = line.strip()
-        if line.startswith("show "):
-            val = line[5:].strip().strip('"').strip("'")
-            outputs.append(val)
-        elif line.startswith("think "):
-            outputs.append("🧠 [AI response simulated]")
+    aion_path = os.getenv(
+        "AION_PATH",
+        os.path.join(os.path.dirname(__file__), "..", "AION")
+    )
+    aion_path = os.path.abspath(aion_path)
 
-    output = "\n".join(outputs) if outputs else "// No output"
-    return jsonify({"output": output, "error": None})
+    if not os.path.isdir(aion_path):
+        return jsonify({
+            "output": "",
+            "error":  f"AION not found at '{aion_path}'. Check AION_PATH in .env",
+            "time":   0
+        })
+
+    # Find AION's venv Python
+    aion_python = os.path.join(aion_path, "venv", "Scripts", "python.exe")
+    if not os.path.isfile(aion_python):
+        aion_python = os.path.join(aion_path, "venv", "bin", "python")
+    if not os.path.isfile(aion_python):
+        aion_python = _sys.executable
+
+    # Write code to temp file
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".aion",
+        delete=False, encoding="utf-8"
+    ) as tmp:
+        tmp.write(code)
+        tmp_path = tmp.name
+
+    start = time.perf_counter()
+
+    try:
+        run_script = (
+            "import sys, os\n"
+            f"sys.path.insert(0, r'{aion_path}')\n"
+            "from runner import AIONRunner\n"
+            f"r = AIONRunner(filepath=r'{tmp_path}')\n"
+            "r.run()\n"
+        )
+
+        result = subprocess.run(
+            [aion_python, "-c", run_script],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd=aion_path,
+            encoding="utf-8",
+            errors="replace",
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"}
+        )
+
+        elapsed = round((time.perf_counter() - start) * 1000, 2)
+
+        output = result.stdout or ""
+
+        # Strip AION banner
+        if "→ Running" in output:
+            idx = output.find("→ Running")
+            nl  = output.find("\n", idx)
+            if nl != -1:
+                output = output[nl+1:].strip()
+
+        # Strip "Done in Xms" line
+        lines  = [l for l in output.split("\n")
+                  if not l.strip().startswith("✓ Done in")]
+        output = "\n".join(lines).strip()
+
+        error = None
+        if result.returncode != 0 and not output:
+            stderr = result.stderr.strip()
+            if stderr:
+                # Get last meaningful line
+                err_lines = [l for l in stderr.split("\n") if l.strip()]
+                error = err_lines[-1] if err_lines else stderr
+
+        return jsonify({
+            "output": output,
+            "error":  error,
+            "time":   elapsed
+        })
+
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            "output": "",
+            "error":  "Execution timed out (120s limit). AI calls can be slow — try a simpler program first.",
+            "time":   120000
+        })
+    except Exception as e:
+        return jsonify({
+            "output": "",
+            "error":  str(e),
+            "time":   0
+        })
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
 
 
 # ── WebSocket: Chat ───────────────────────────────────────────

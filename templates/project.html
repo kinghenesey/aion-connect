@@ -26,6 +26,61 @@
 }
 .like-btn:hover{border-color:var(--pink);color:var(--pink);}
 .like-btn.liked{background:var(--pink-dim);border-color:var(--pink);color:var(--pink);}
+.run-panel-header{
+  padding:12px 18px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.run-panel-title{
+  font-size:0.72rem;font-weight:700;
+  color:var(--text1);letter-spacing:0.08em;
+  text-transform:uppercase;font-family:var(--font-body);
+  display:flex;align-items:center;gap:8px;
+}
+.run-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 16px;border-radius:var(--radius);
+  background:var(--cyan);color:var(--bg0);
+  font-family:var(--font-body);font-size:0.75rem;
+  font-weight:700;border:none;cursor:pointer;
+  transition:all 0.15s;
+}
+.run-btn:hover{background:#33ecff;transform:translateY(-1px);}
+.run-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.run-output{
+  padding:18px 20px;
+  font-family:var(--font-mono);
+  font-size:12.5px;line-height:1.75;
+  min-height:80px;max-height:320px;
+  overflow-y:auto;
+  white-space:pre-wrap;word-break:break-word;
+}
+.out-default{color:var(--green);}
+.out-error{color:var(--red);}
+.out-dim{color:var(--text2);}
+.out-think{color:var(--cyan);}
+.out-system{color:var(--purple);}
+.run-status{
+  font-size:0.65rem;color:var(--text2);
+  font-family:var(--font-body);
+}
+.code-tabs{
+  display:flex;gap:0;
+  border-bottom:1px solid var(--border2);
+}
+.code-tab{
+  padding:10px 18px;font-size:0.75rem;
+  font-weight:600;color:var(--text2);
+  cursor:pointer;border-bottom:2px solid transparent;
+  transition:all 0.15s;font-family:var(--font-body);
+  background:transparent;border-top:none;
+  border-left:none;border-right:none;
+}
+.code-tab:hover{color:var(--text1);}
+.code-tab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
 .comment-box{
   background:var(--bg3);border:1px solid var(--border2);
   border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;
@@ -61,6 +116,14 @@
   display:flex;gap:10px;align-items:flex-start;
 }
 .related-item:last-child{border-bottom:none;}
+.spinner{
+  display:inline-block;width:10px;height:10px;
+  border:2px solid var(--bg3);
+  border-top-color:var(--bg0);
+  border-radius:50%;
+  animation:spin 0.5s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 {% endblock %}
 
@@ -86,7 +149,8 @@
       </h1>
 
       <p style="font-size:0.88rem;color:var(--text1);
-                line-height:1.7;max-width:600px;margin-bottom:20px">
+                line-height:1.7;max-width:600px;margin-bottom:20px;
+                font-family:var(--font-body)">
         {{ project.description or 'No description provided.' }}
       </p>
 
@@ -95,30 +159,35 @@
            style="display:flex;align-items:center;gap:9px;
                   text-decoration:none;color:var(--text1);font-size:0.82rem;
                   font-family:var(--font-body)">
-          <div class="avatar">{{ project.author.username[0].upper() }}</div>
+          <div class="avatar" style="overflow:hidden;padding:0">
+            {% if project.author.avatar %}
+            <img src="/static/uploads/{{ project.author.avatar }}"
+                 style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+            {% else %}
+            {{ project.author.username[0].upper() }}
+            {% endif %}
+          </div>
           <div>
-            <div style="color:var(--text0);font-weight:600">{{ project.author.username }}</div>
+            <div style="color:var(--text0);font-weight:600">
+              {{ project.author.username }}
+            </div>
             <div style="font-size:0.68rem;color:var(--text2)">
               {{ project.created_at.strftime('%b %d, %Y') }}
             </div>
           </div>
         </a>
-
-        <div style="display:flex;gap:16px">
-          <span class="stat">↗ {{ project.views }} views</span>
-          <span class="stat">◎ {{ project.comment_count }} comments</span>
-        </div>
+        <span class="stat">↗ {{ project.views }} views</span>
+        <span class="stat">◎ {{ project.comment_count }} comments</span>
       </div>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end">
       {% if current_user.is_authenticated %}
       <button class="like-btn {% if liked %}liked{% endif %}"
-              id="like-btn"
-              onclick="toggleLike({{ project.id }})">
+              id="like-btn" onclick="toggleLike({{ project.id }})">
         <span id="like-icon">{% if liked %}♥{% else %}♡{% endif %}</span>
         <span id="like-count">{{ project.like_count }}</span>
-        <span>{% if liked %}Liked{% else %}Like{% endif %}</span>
+        <span id="like-label">{% if liked %}Liked{% else %}Like{% endif %}</span>
       </button>
       {% else %}
       <a href="/login" class="btn btn-ghost">♡ {{ project.like_count }} Likes</a>
@@ -141,15 +210,55 @@
 
     <!-- Main -->
     <div>
-      <!-- Code -->
-      <div style="margin-bottom:28px">
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    margin-bottom:12px">
-          <h2 style="font-family:var(--font-ui);font-size:1rem;
-                     font-weight:700;color:var(--text0)">Source Code</h2>
-          <button class="btn btn-ghost btn-sm" onclick="copyCode()">Copy</button>
+      <!-- Code + Run Tabs -->
+      <div style="background:var(--bg2);border:1px solid var(--border2);
+                  border-radius:var(--radius-lg);overflow:hidden;margin-bottom:28px">
+        <div class="code-tabs">
+          <button class="code-tab active" onclick="switchTab('code',this)">
+            Source Code
+          </button>
+          <button class="code-tab" onclick="switchTab('run',this)">
+            ▶ Run
+          </button>
         </div>
-        <div class="code-block" id="code-block">{{ project.code }}</div>
+
+        <!-- Code View -->
+        <div id="tab-code">
+          <div style="display:flex;justify-content:flex-end;
+                      padding:10px 16px;background:var(--bg2);
+                      border-bottom:1px solid var(--border)">
+            <button class="btn btn-ghost btn-sm" onclick="copyCode()">
+              Copy Code
+            </button>
+          </div>
+          <div class="code-block" id="code-block"
+               style="border:none;border-radius:0;margin:0">{{ project.code }}</div>
+        </div>
+
+        <!-- Run Panel -->
+        <div id="tab-run" style="display:none">
+          <div class="run-panel-header">
+            <div class="run-panel-title">
+              <span style="color:var(--green)">●</span>
+              AION Runtime
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="run-status" id="run-status">Ready</span>
+              <button class="run-btn" id="run-btn" onclick="runCode()">
+                ▶ Run
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="clearOutput()">
+                Clear
+              </button>
+            </div>
+          </div>
+          <div class="run-output" id="run-output">
+            <span style="color:var(--text2)">// Click ▶ Run to execute this AION program
+// Note: AI calls (think, pipelines) may take 10-30 seconds
+// Output will appear here
+</span>
+          </div>
+        </div>
       </div>
 
       <div class="divider"></div>
@@ -164,7 +273,7 @@
         {% if current_user.is_authenticated %}
         <div class="comment-box">
           <textarea class="comment-input" id="comment-input"
-                    placeholder="Share your thoughts about this project..."></textarea>
+                    placeholder="Share your thoughts..."></textarea>
           <div style="display:flex;justify-content:flex-end;margin-top:10px">
             <button class="btn btn-primary btn-sm"
                     onclick="submitComment({{ project.id }})">
@@ -173,25 +282,35 @@
           </div>
         </div>
         {% else %}
-        <div style="padding:16px;background:var(--bg3);border:1px solid var(--border2);
-                    border-radius:var(--radius-lg);margin-bottom:20px;
-                    font-size:0.78rem;color:var(--text1);text-align:center">
-          <a href="/login" style="color:var(--cyan)">Login</a> to leave a comment
+        <div style="padding:16px;background:var(--bg3);
+                    border:1px solid var(--border2);
+                    border-radius:var(--radius-lg);
+                    margin-bottom:20px;font-size:0.78rem;
+                    color:var(--text1);text-align:center;
+                    font-family:var(--font-body)">
+          <a href="/login" style="color:var(--cyan)">Login</a> to comment
         </div>
         {% endif %}
 
         <div id="comments-list">
           {% for comment in comments %}
           <div class="comment">
-            <a href="/profile/{{ comment.author.username }}" class="avatar"
-               style="flex-shrink:0">
+            <a href="/profile/{{ comment.author.username }}"
+               class="avatar" style="flex-shrink:0;overflow:hidden;padding:0">
+              {% if comment.author.avatar %}
+              <img src="/static/uploads/{{ comment.author.avatar }}"
+                   style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+              {% else %}
               {{ comment.author.username[0].upper() }}
+              {% endif %}
             </a>
             <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">
+              <div style="display:flex;align-items:center;
+                          gap:10px;margin-bottom:5px">
                 <a href="/profile/{{ comment.author.username }}"
-                   style="font-size:0.8rem;font-weight:600;color:var(--text0);
-                          text-decoration:none;font-family:var(--font-body)">
+                   style="font-size:0.8rem;font-weight:600;
+                          color:var(--text0);text-decoration:none;
+                          font-family:var(--font-body)">
                   {{ comment.author.username }}
                 </a>
                 <span style="font-size:0.68rem;color:var(--text2)">
@@ -205,8 +324,8 @@
             </div>
           </div>
           {% else %}
-          <div style="text-align:center;padding:32px;color:var(--text2);
-                      font-size:0.78rem">
+          <div style="text-align:center;padding:32px;
+                      color:var(--text2);font-size:0.78rem">
             No comments yet. Be the first!
           </div>
           {% endfor %}
@@ -216,14 +335,20 @@
 
     <!-- Sidebar -->
     <div>
-      <!-- Author -->
       <div class="sidebar-card">
         <div class="sidebar-card-header">Author</div>
         <div class="sidebar-card-body">
           <a href="/profile/{{ project.author.username }}"
              style="display:flex;align-items:center;gap:12px;
                     text-decoration:none;margin-bottom:14px">
-            <div class="avatar lg">{{ project.author.username[0].upper() }}</div>
+            <div class="avatar lg" style="overflow:hidden;padding:0">
+              {% if project.author.avatar %}
+              <img src="/static/uploads/{{ project.author.avatar }}"
+                   style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+              {% else %}
+              {{ project.author.username[0].upper() }}
+              {% endif %}
+            </div>
             <div>
               <div style="font-weight:700;color:var(--text0);
                           font-family:var(--font-ui)">
@@ -251,11 +376,14 @@
         </div>
       </div>
 
-      <!-- Stats -->
       <div class="sidebar-card">
         <div class="sidebar-card-header">Stats</div>
         <div class="sidebar-card-body">
-          {% for label, val in [('Views', project.views), ('Likes', project.like_count), ('Comments', project.comment_count)] %}
+          {% for label, val in [
+            ('Views', project.views),
+            ('Likes', project.like_count),
+            ('Comments', project.comment_count)
+          ] %}
           <div style="display:flex;justify-content:space-between;
                       padding:7px 0;border-bottom:1px solid var(--border);
                       font-size:0.78rem;font-family:var(--font-body)">
@@ -266,7 +394,6 @@
         </div>
       </div>
 
-      <!-- Related -->
       {% if related %}
       <div class="sidebar-card">
         <div class="sidebar-card-header">Related Projects</div>
@@ -274,9 +401,7 @@
           {% for r in related %}
           <div class="related-item">
             <div style="width:36px;height:36px;border-radius:8px;
-                        flex-shrink:0;overflow:hidden"
-                 class="cat-{{ r.category }}">
-            </div>
+                        flex-shrink:0" class="cat-{{ r.category }}"></div>
             <div style="flex:1;min-width:0">
               <a href="/project/{{ r.id }}"
                  style="font-size:0.78rem;font-weight:600;
@@ -293,6 +418,19 @@
         </div>
       </div>
       {% endif %}
+
+      <div class="sidebar-card">
+        <div class="sidebar-card-body" style="text-align:center">
+          <div style="font-size:0.72rem;color:var(--text2);
+                      margin-bottom:10px;font-family:var(--font-body)">
+            Try this project live
+          </div>
+          <button class="btn btn-primary" style="width:100%"
+                  onclick="switchTab('run',null);runCode();">
+            ▶ Run Project
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -301,29 +439,140 @@
 
 {% block scripts %}
 <script>
+const projectCode = {{ project.code | tojson }};
+
+function switchTab(tab, btn){
+  document.getElementById('tab-code').style.display =
+    tab === 'code' ? 'block' : 'none';
+  document.getElementById('tab-run').style.display =
+    tab === 'run' ? 'block' : 'none';
+  document.querySelectorAll('.code-tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+
+function speakOutputLines(code){
+  if(!('speechSynthesis' in window)) return;
+  const lines = code.split('\n');
+  const toSpeak = [];
+  lines.forEach(line => {
+    line = line.trim();
+    if(line.startsWith('voice_speak(')){
+      const match = line.match(/voice_speak\(['"](.+)['"]\)/);
+      if(match) toSpeak.push(match[1]);
+    }
+  });
+  if(!toSpeak.length) return;
+  window.speechSynthesis.cancel();
+  toSpeak.forEach((text, i) => {
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate  = 0.95;
+    utt.pitch = 1.0;
+    // Use a natural voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v =>
+      v.name.includes('Google') ||
+      v.name.includes('Samantha') ||
+      v.name.includes('Jenny') ||
+      v.lang === 'en-US'
+    );
+    if(preferred) utt.voice = preferred;
+    if(i === 0){
+      append('🔊 Speaking via browser TTS...\n','out-system');
+    }
+    window.speechSynthesis.speak(utt);
+  });
+}
+
+async function runCode(){
+  const btn    = document.getElementById('run-btn');
+  const status = document.getElementById('run-status');
+  const output = document.getElementById('run-output');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running';
+  status.textContent = 'Executing...';
+  output.innerHTML = '<span style="color:var(--text2)">$ aion run\n\n</span>';
+
+  try{
+    const res  = await fetch('/api/run',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code:projectCode})
+    });
+    const data = await res.json();
+    output.innerHTML = '';
+
+    if(data.error){
+      append('✗ Error\n','out-error');
+      append('─'.repeat(40)+'\n','out-dim');
+      append(data.error+'\n','out-error');
+    } else if(data.output){
+      data.output.split('\n').forEach(line=>{
+        if(line.startsWith('🧠')) append(line+'\n','out-think');
+        else if(line.startsWith('✓')||line.startsWith('⚡')) append(line+'\n','out-system');
+        else if(line.startsWith('✗')) append(line+'\n','out-error');
+        else append(line+'\n','out-default');
+      });
+      // Browser TTS — speak any voice_speak lines
+      speakOutputLines(projectCode);
+    } else {
+      append('// No output\n','out-dim');
+    }
+
+    const t = data.time || 0;
+    append('\n'+'─'.repeat(40)+'\n','out-dim');
+    append('✓ Done in '+t+'ms\n','out-dim');
+    status.textContent = 'Done in '+t+'ms';
+
+  } catch(err){
+    output.innerHTML = '';
+    append('✗ Connection error: '+err.message+'\n','out-error');
+    status.textContent = 'Error';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '▶ Run';
+}
+
+function append(text, cls){
+  const out  = document.getElementById('run-output');
+  const span = document.createElement('span');
+  span.className   = cls||'';
+  span.textContent = text;
+  out.appendChild(span);
+  out.scrollTop = out.scrollHeight;
+}
+
+function clearOutput(){
+  document.getElementById('run-output').innerHTML =
+    '<span style="color:var(--text2)">// Output cleared\n</span>';
+  document.getElementById('run-status').textContent = 'Ready';
+}
+
 async function toggleLike(id){
-  const btn = document.getElementById('like-btn');
-  const icon = document.getElementById('like-icon');
+  const btn   = document.getElementById('like-btn');
+  const icon  = document.getElementById('like-icon');
   const count = document.getElementById('like-count');
-  const res = await fetch('/api/like/'+id,{method:'POST'});
-  const data = await res.json();
+  const label = document.getElementById('like-label');
+  const res   = await fetch('/api/like/'+id,{method:'POST'});
+  const data  = await res.json();
   if(data.liked){
     btn.classList.add('liked');
     icon.textContent='♥';
-    btn.querySelector('span:last-child').textContent='Liked';
-  }else{
+    label.textContent='Liked';
+  } else {
     btn.classList.remove('liked');
     icon.textContent='♡';
-    btn.querySelector('span:last-child').textContent='Like';
+    label.textContent='Like';
   }
   count.textContent=data.count;
 }
 
 async function submitComment(id){
   const input = document.getElementById('comment-input');
-  const body = input.value.trim();
+  const body  = input.value.trim();
   if(!body) return;
-  const res = await fetch('/api/comment/'+id,{
+  const res  = await fetch('/api/comment/'+id,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({body})
@@ -331,10 +580,13 @@ async function submitComment(id){
   const data = await res.json();
   if(data.error) return alert(data.error);
   const list = document.getElementById('comments-list');
-  const div = document.createElement('div');
+  const div  = document.createElement('div');
   div.className='comment';
+  const avatarHtml = data.avatar
+    ? `<img src="/static/uploads/${data.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+    : data.username[0].toUpperCase();
   div.innerHTML=`
-    <div class="avatar" style="flex-shrink:0">${data.username[0].toUpperCase()}</div>
+    <div class="avatar" style="flex-shrink:0;overflow:hidden;padding:0">${avatarHtml}</div>
     <div style="flex:1">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">
         <span style="font-size:0.8rem;font-weight:600;color:var(--text0);font-family:var(--font-body)">${data.username}</span>
@@ -347,20 +599,19 @@ async function submitComment(id){
 }
 
 async function toggleFollow(id){
-  const btn = document.getElementById('follow-btn');
-  const res = await fetch('/api/follow/'+id,{method:'POST'});
+  const btn  = document.getElementById('follow-btn');
+  const res  = await fetch('/api/follow/'+id,{method:'POST'});
   const data = await res.json();
   btn.textContent = data.following ? 'Following' : 'Follow';
-  btn.className = data.following ? 'btn btn-ghost' : 'btn btn-primary';
-  btn.style.width='100%';
+  btn.className   = data.following ? 'btn btn-ghost' : 'btn btn-primary';
+  btn.style.width = '100%';
 }
 
 function copyCode(){
-  const code = document.getElementById('code-block').textContent;
-  navigator.clipboard.writeText(code).then(()=>{
+  navigator.clipboard.writeText(projectCode).then(()=>{
     const btn = event.target;
     btn.textContent='Copied!';
-    setTimeout(()=>btn.textContent='Copy',2000);
+    setTimeout(()=>btn.textContent='Copy Code',2000);
   });
 }
 </script>

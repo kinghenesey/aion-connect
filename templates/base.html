@@ -469,11 +469,23 @@ body{
   </div>
 
   <div class="nav-right">
-    <div class="search-wrap">
+    <div class="search-wrap" id="nav-search-wrap">
       <span class="search-icon">⌕</span>
-      <form action="/explore" method="GET">
-        <input type="text" name="q" placeholder="Search projects..." value="{{ request.args.get('q', '') }}">
+      <form action="/explore" method="GET" id="nav-search-form">
+        <input type="text" name="q" id="nav-search-input"
+               placeholder="Search... ( / )"
+               value="{{ request.args.get('q', '') }}"
+               autocomplete="off"
+               oninput="navSearchInput(this.value)"
+               onkeydown="if(event.key==='Escape')hideNavSug()">
       </form>
+      <div id="nav-suggestions"
+           style="position:absolute;top:calc(100% + 8px);left:0;right:0;
+                  background:var(--bg3);border:1px solid var(--border2);
+                  border-radius:var(--radius-lg);z-index:300;
+                  box-shadow:var(--shadow-lg);display:none;overflow:hidden;
+                  min-width:280px;">
+      </div>
     </div>
     
         {% if current_user.is_authenticated %}
@@ -602,6 +614,105 @@ async function checkNotifications(){
 checkNotifications();
 setInterval(checkNotifications, 30000);
 {% endif %}
+
+// ── Navbar live search ────────────────────────────────────────
+let navSugTimer;
+
+async function navSearchInput(val){
+  clearTimeout(navSugTimer);
+  if(!val || val.length < 2){ hideNavSug(); return; }
+  navSugTimer = setTimeout(async () => {
+    try{
+      const res  = await fetch('/api/search?q='+encodeURIComponent(val));
+      const data = await res.json();
+      renderNavSug(data, val);
+    } catch(e){ hideNavSug(); }
+  }, 250);
+}
+
+function renderNavSug(data, q){
+  const el = document.getElementById('nav-suggestions');
+  let html = '';
+
+  if(data.projects && data.projects.length){
+    html += '<div style="padding:6px 0;border-bottom:1px solid var(--border)">';
+    html += '<div style="padding:4px 14px;font-size:0.6rem;font-weight:700;letter-spacing:0.12em;color:var(--text2);text-transform:uppercase;font-family:var(--font-body)">Projects</div>';
+    data.projects.slice(0,4).forEach(p => {
+      html += `<a href="/project/${p.id}"
+        style="display:flex;align-items:center;gap:8px;padding:7px 14px;
+               font-size:0.78rem;color:var(--text1);text-decoration:none;
+               transition:background 0.1s;font-family:var(--font-body)"
+        onmouseover="this.style.background='var(--bg4)'"
+        onmouseout="this.style.background='transparent'">
+        <span style="font-size:0.58rem;padding:2px 6px;border-radius:10px;
+                     background:var(--bg4);color:var(--text2)">${p.category}</span>
+        ${p.title}
+      </a>`;
+    });
+    html += '</div>';
+  }
+
+  if(data.users && data.users.length){
+    html += '<div style="padding:6px 0">';
+    data.users.forEach(u => {
+      html += `<a href="/profile/${u.username}"
+        style="display:flex;align-items:center;gap:8px;padding:7px 14px;
+               font-size:0.78rem;color:var(--text1);text-decoration:none;
+               transition:background 0.1s;font-family:var(--font-body)"
+        onmouseover="this.style.background='var(--bg4)'"
+        onmouseout="this.style.background='transparent'">
+        <div style="width:20px;height:20px;border-radius:50%;
+                    background:linear-gradient(135deg,var(--cyan),var(--purple));
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:0.55rem;font-weight:700;color:var(--bg0);flex-shrink:0">
+          ${u.username[0].toUpperCase()}
+        </div>
+        ${u.username}
+      </a>`;
+    });
+    html += '</div>';
+  }
+
+  if(!html){
+    html = `<div style="padding:12px 14px;font-size:0.75rem;
+                        color:var(--text2);font-family:var(--font-body)">
+      No results for "${q}"
+    </div>`;
+  }
+
+  html += `<a href="/explore?q=${encodeURIComponent(q)}"
+    style="display:block;padding:9px 14px;font-size:0.72rem;
+           color:var(--cyan);border-top:1px solid var(--border);
+           text-decoration:none;font-family:var(--font-body)"
+    onmouseover="this.style.background='var(--bg4)'"
+    onmouseout="this.style.background='transparent'">
+    See all results for "${q}" →
+  </a>`;
+
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
+
+function hideNavSug(){
+  const el = document.getElementById('nav-suggestions');
+  if(el) el.style.display = 'none';
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('nav-search-wrap');
+  if(wrap && !wrap.contains(e.target)) hideNavSug();
+});
+
+// Press / to focus search
+document.addEventListener('keydown', e => {
+  if(e.key === '/' &&
+     e.target.tagName !== 'INPUT' &&
+     e.target.tagName !== 'TEXTAREA'){
+    e.preventDefault();
+    const inp = document.getElementById('nav-search-input');
+    if(inp) inp.focus();
+  }
+});
 </script>
 
 {% block scripts %}{% endblock %}

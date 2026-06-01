@@ -1,101 +1,337 @@
 {% extends "base.html" %}
-{% block title %}Explore — AION Connect{% endblock %}
+{% block title %}{% if search %}"{{ search }}" — {% endif %}Explore — AION Connect{% endblock %}
+
+{% block styles %}
+<style>
+.search-hero{
+  background:var(--bg2);
+  border-bottom:1px solid var(--border2);
+  padding:40px 0;
+  position:relative;overflow:hidden;
+}
+.search-hero-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,
+    rgba(0,229,255,0.04) 0%,transparent 60%);
+  pointer-events:none;
+}
+.big-search{
+  position:relative;max-width:640px;margin:0 auto;
+}
+.big-search input{
+  width:100%;background:var(--bg3);
+  border:1px solid var(--border2);
+  border-radius:var(--radius-xl);
+  color:var(--text0);font-family:var(--font-body);
+  font-size:1rem;padding:14px 20px 14px 48px;
+  outline:none;transition:all 0.2s;
+}
+.big-search input:focus{
+  border-color:var(--cyan);background:var(--bg4);
+  box-shadow:0 0 0 4px rgba(0,229,255,0.06);
+}
+.big-search-icon{
+  position:absolute;left:16px;top:50%;
+  transform:translateY(-50%);
+  color:var(--text2);font-size:1.1rem;
+  pointer-events:none;
+}
+.big-search-btn{
+  position:absolute;right:8px;top:50%;
+  transform:translateY(-50%);
+}
+
+/* Suggestions dropdown */
+.suggestions{
+  position:absolute;top:calc(100% + 8px);left:0;right:0;
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  border-radius:var(--radius-lg);
+  z-index:100;overflow:hidden;
+  box-shadow:var(--shadow-lg);
+  display:none;
+}
+.suggestions.show{display:block;}
+.sug-section{
+  padding:8px 0;
+  border-bottom:1px solid var(--border);
+}
+.sug-section:last-child{border-bottom:none;}
+.sug-title{
+  padding:4px 14px;font-size:0.6rem;
+  font-weight:700;letter-spacing:0.12em;
+  color:var(--text2);text-transform:uppercase;
+  font-family:var(--font-body);
+}
+.sug-item{
+  padding:8px 14px;font-size:0.8rem;
+  color:var(--text1);cursor:pointer;
+  display:flex;align-items:center;gap:10px;
+  transition:background 0.1s;font-family:var(--font-body);
+  text-decoration:none;
+}
+.sug-item:hover{background:var(--bg4);color:var(--text0);}
+
+/* Recent searches */
+.recent-searches{
+  display:flex;gap:6px;flex-wrap:wrap;
+  justify-content:center;margin-top:12px;
+}
+.recent-tag{
+  padding:3px 10px;border-radius:20px;
+  font-size:0.68rem;color:var(--text2);
+  border:1px solid var(--border2);
+  cursor:pointer;transition:all 0.15s;
+  font-family:var(--font-body);
+  text-decoration:none;
+}
+.recent-tag:hover{color:var(--cyan);border-color:var(--cyan);}
+
+/* Results header */
+.results-header{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  margin-bottom:20px;flex-wrap:wrap;gap:12px;
+}
+.results-count{
+  font-size:0.82rem;color:var(--text1);
+  font-family:var(--font-body);
+}
+.results-count strong{color:var(--text0);}
+
+/* User results */
+.user-results{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:12px;margin-bottom:24px;
+}
+.user-card{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--radius-lg);padding:16px;
+  display:flex;align-items:center;gap:12px;
+  text-decoration:none;transition:all 0.2s;
+}
+.user-card:hover{
+  border-color:var(--border3);
+  transform:translateY(-2px);
+  box-shadow:var(--shadow);
+}
+</style>
+{% endblock %}
 
 {% block content %}
+
+<!-- Search Hero -->
+<div class="search-hero">
+  <div class="search-hero-bg"></div>
+  <div class="container">
+    <div style="text-align:center;margin-bottom:20px">
+      <h1 style="font-family:var(--font-ui);font-size:1.8rem;
+                 font-weight:800;color:var(--text0);margin-bottom:6px">
+        Explore Projects
+      </h1>
+      <p style="font-size:0.82rem;color:var(--text1);
+                font-family:var(--font-body)">
+        Discover AI-native programs built with AION
+      </p>
+    </div>
+
+    <!-- Big Search -->
+    <form action="/explore" method="GET" id="search-form">
+      <div class="big-search" id="search-wrap">
+        <span class="big-search-icon">⌕</span>
+        <input type="text" name="q" id="main-search"
+               placeholder="Search projects, code, tags, authors..."
+               value="{{ search }}"
+               autocomplete="off"
+               oninput="onSearchInput(this.value)"
+               onkeydown="onSearchKey(event)">
+        <button type="submit" class="btn btn-primary btn-sm big-search-btn">
+          Search
+        </button>
+
+        <!-- Suggestions Dropdown -->
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+
+      {% if current_tag %}
+      <input type="hidden" name="tag" value="{{ current_tag }}">
+      {% endif %}
+    </form>
+
+    <!-- Recent Searches -->
+    <div class="recent-searches" id="recent-searches"></div>
+  </div>
+</div>
+
 <div class="page">
 <div class="container">
-
-  <div style="display:grid;grid-template-columns:240px 1fr;gap:28px">
+  <div style="display:grid;grid-template-columns:220px 1fr;gap:28px">
 
     <!-- Sidebar -->
     <div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-body" style="padding:16px">
-          <form action="/explore" method="GET">
-            <input type="text" name="q" class="form-input"
-                   placeholder="Search projects..."
-                   value="{{ search }}"
-                   style="margin-bottom:10px">
-            <button type="submit" class="btn btn-primary" style="width:100%">
-              Search
-            </button>
-          </form>
+      <!-- Categories -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:0.65rem;font-weight:700;
+                    letter-spacing:0.12em;color:var(--text2);
+                    text-transform:uppercase;font-family:var(--font-body);
+                    margin-bottom:10px">
+          Categories
         </div>
+        {% for cat in ['ai','pipeline','vision','voice','web','database','general'] %}
+        <a href="/explore?tag={{ cat }}{% if search %}&q={{ search }}{% endif %}"
+           style="display:flex;align-items:center;gap:8px;
+                  padding:7px 10px;border-radius:var(--radius);
+                  text-decoration:none;margin-bottom:2px;
+                  transition:all 0.15s;
+                  {% if cat == current_tag %}
+                    background:var(--bg4);border:1px solid var(--border2);
+                  {% else %}
+                    border:1px solid transparent;
+                  {% endif %}">
+          <span class="tag tag-{{ cat }}" style="pointer-events:none">{{ cat }}</span>
+          {% if cat == current_tag %}
+          <span style="margin-left:auto;font-size:0.65rem;
+                       color:var(--text2);font-family:var(--font-body)">
+            ✓
+          </span>
+          {% endif %}
+        </a>
+        {% endfor %}
+        {% if current_tag %}
+        <a href="/explore{% if search %}?q={{ search }}{% endif %}"
+           style="display:block;padding:6px 10px;font-size:0.72rem;
+                  color:var(--red);text-decoration:none;margin-top:4px;
+                  font-family:var(--font-body)">
+          × Clear category
+        </a>
+        {% endif %}
       </div>
 
-      <div class="card">
-        <div style="padding:14px 18px;border-bottom:1px solid var(--border);
-                    font-size:0.7rem;font-weight:700;color:var(--text1);
-                    letter-spacing:0.1em;text-transform:uppercase;
-                    font-family:var(--font-body)">
+      <!-- Popular Tags -->
+      <div>
+        <div style="font-size:0.65rem;font-weight:700;
+                    letter-spacing:0.12em;color:var(--text2);
+                    text-transform:uppercase;font-family:var(--font-body);
+                    margin-bottom:10px">
           Popular Tags
         </div>
-        <div style="padding:14px 18px;display:flex;flex-wrap:wrap;gap:6px">
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
           {% for tag, count in popular_tags %}
           <a href="/explore?tag={{ tag }}"
-             class="tag {% if tag == current_tag %}tag-ai{% else %}tag-general{% endif %}">
+             class="tag tag-general"
+             style="font-size:0.62rem">
             {{ tag }}
-            <span style="margin-left:4px;opacity:0.6">{{ count }}</span>
+            <span style="opacity:0.5;margin-left:3px">{{ count }}</span>
           </a>
           {% endfor %}
         </div>
       </div>
 
-      <div style="margin-top:16px">
-        <div style="font-size:0.7rem;color:var(--text2);
-                    font-family:var(--font-body);margin-bottom:8px;
-                    font-weight:600;letter-spacing:0.08em;text-transform:uppercase">
-          Categories
+      <!-- Sort -->
+      <div style="margin-top:20px">
+        <div style="font-size:0.65rem;font-weight:700;
+                    letter-spacing:0.12em;color:var(--text2);
+                    text-transform:uppercase;font-family:var(--font-body);
+                    margin-bottom:10px">
+          Sort By
         </div>
-        {% for cat in ['ai','pipeline','vision','voice','web','database','general'] %}
-        <a href="/explore?tag={{ cat }}"
-           style="display:flex;align-items:center;gap:10px;
-                  padding:8px 12px;border-radius:var(--radius);
+        {% for s, label in [('latest','Latest'),('popular','Most Liked'),('trending','Most Viewed')] %}
+        <a href="/explore?sort={{ s }}{% if search %}&q={{ search }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}"
+           style="display:block;padding:7px 10px;border-radius:var(--radius);
                   text-decoration:none;margin-bottom:2px;
-                  transition:background 0.15s;
-                  {% if cat == current_tag %}background:var(--bg4);{% endif %}">
-          <span class="tag tag-{{ cat }}" style="pointer-events:none">{{ cat }}</span>
+                  font-size:0.78rem;font-family:var(--font-body);
+                  transition:all 0.15s;
+                  {% if current_sort == s %}
+                    color:var(--cyan);background:var(--cyan-dim);
+                  {% else %}
+                    color:var(--text1);
+                  {% endif %}">
+          {{ label }}
         </a>
         {% endfor %}
       </div>
     </div>
 
-    <!-- Main -->
+    <!-- Main Results -->
     <div>
-      <div style="display:flex;align-items:center;
-                  justify-content:space-between;margin-bottom:20px">
-        <div>
-          <h1 style="font-family:var(--font-ui);font-size:1.4rem;
-                     font-weight:800;color:var(--text0)">
-            {% if search %}Results for "{{ search }}"
-            {% elif current_tag %}#{{ current_tag }}
-            {% else %}Explore Projects
-            {% endif %}
-          </h1>
-          <p style="font-size:0.75rem;color:var(--text2);
-                    margin-top:3px;font-family:var(--font-body)">
-            {{ total }} project{% if total != 1 %}s{% endif %} found
-          </p>
+      <!-- Results Header -->
+      <div class="results-header">
+        <div class="results-count">
+          {% if search %}
+          Showing <strong>{{ total }}</strong>
+          result{% if total != 1 %}s{% endif %}
+          for <strong>"{{ search }}"</strong>
+          {% elif current_tag %}
+          Showing <strong>{{ total }}</strong>
+          project{% if total != 1 %}s{% endif %}
+          tagged <strong>#{{ current_tag }}</strong>
+          {% else %}
+          <strong>{{ total }}</strong>
+          project{% if total != 1 %}s{% endif %} total
+          {% endif %}
         </div>
+
         {% if search or current_tag %}
-        <a href="/explore" class="btn btn-ghost btn-sm">Clear filters</a>
+        <a href="/explore" class="btn btn-ghost btn-sm">
+          × Clear all filters
+        </a>
         {% endif %}
       </div>
 
+      <!-- Matching Users -->
+      {% if matching_users %}
+      <div style="margin-bottom:24px">
+        <div style="font-size:0.7rem;font-weight:700;
+                    letter-spacing:0.1em;color:var(--text2);
+                    text-transform:uppercase;font-family:var(--font-body);
+                    margin-bottom:10px">
+          Matching Developers
+        </div>
+        <div class="user-results">
+          {% for u in matching_users %}
+          <a href="/profile/{{ u.username }}" class="user-card">
+            <div class="avatar" style="overflow:hidden;padding:0;flex-shrink:0">
+              {% if u.avatar %}
+              <img src="/static/uploads/{{ u.avatar }}"
+                   style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+              {% else %}
+              {{ u.username[0].upper() }}
+              {% endif %}
+            </div>
+            <div style="min-width:0">
+              <div style="font-weight:700;color:var(--text0);
+                          font-size:0.82rem;font-family:var(--font-ui)">
+                {{ u.username }}
+              </div>
+              <div style="font-size:0.68rem;color:var(--text2);
+                          font-family:var(--font-body)">
+                {{ u.project_count }} projects
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Projects Grid -->
       {% if projects %}
       <div class="grid grid-3">
         {% for p in projects %}
-        <div class="project-card" onclick="window.location='/project/{{ p.id }}'">
+        <div class="project-card"
+             onclick="window.location='/project/{{ p.id }}'">
           <div class="project-card-preview cat-{{ p.category }}">
             <div class="project-card-preview-bg">{{ p.code[:300] }}</div>
             <div class="project-card-overlay">
               <a href="/project/{{ p.id }}" class="btn btn-primary btn-sm"
-                 onclick="event.stopPropagation()">View Project</a>
+                 onclick="event.stopPropagation()">View</a>
             </div>
           </div>
           <div class="project-card-body">
             <div>
-              <a href="/project/{{ p.id }}" class="project-title">{{ p.title }}</a>
+              <a href="/project/{{ p.id }}" class="project-title">
+                {{ p.title }}
+              </a>
               <p class="project-desc" style="margin-top:5px">
                 {{ p.description or 'No description.' }}
               </p>
@@ -113,8 +349,15 @@
                       text-decoration:none;color:var(--text1);
                       font-size:0.72rem;font-family:var(--font-body)"
                onclick="event.stopPropagation()">
-              <div class="avatar" style="width:22px;height:22px;font-size:0.58rem">
+              <div class="avatar"
+                   style="width:22px;height:22px;font-size:0.58rem;
+                          overflow:hidden;padding:0">
+                {% if p.author.avatar %}
+                <img src="/static/uploads/{{ p.author.avatar }}"
+                     style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+                {% else %}
                 {{ p.author.username[0].upper() }}
+                {% endif %}
               </div>
               {{ p.author.username }}
             </a>
@@ -126,19 +369,180 @@
         </div>
         {% endfor %}
       </div>
+
       {% else %}
       <div class="empty">
         <div class="empty-icon">⌕</div>
         <div class="empty-title">No projects found</div>
-        <div class="empty-desc">Try a different search or tag.</div>
-        <a href="/explore" class="btn btn-ghost" style="margin-top:8px">
-          Clear Search
-        </a>
+        <div class="empty-desc">
+          {% if search %}
+          No results for "{{ search }}".
+          Try different keywords or browse by category.
+          {% else %}
+          No projects in this category yet.
+          {% endif %}
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <a href="/explore" class="btn btn-ghost">Clear Search</a>
+          {% if current_user.is_authenticated %}
+          <a href="/post" class="btn btn-primary">+ Share Project</a>
+          {% endif %}
+        </div>
       </div>
       {% endif %}
     </div>
   </div>
+</div>
+</div>
+{% endblock %}
 
-</div>
-</div>
+{% block scripts %}
+<script>
+// ── Recent Searches ───────────────────────────────────────────
+const RECENT_KEY = 'aion_recent_searches';
+
+function getRecent(){
+  try{ return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; }
+  catch(e){ return []; }
+}
+
+function addRecent(q){
+  if(!q) return;
+  let recent = getRecent().filter(r => r !== q);
+  recent.unshift(q);
+  recent = recent.slice(0,5);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+}
+
+function renderRecent(){
+  const recent = getRecent();
+  const el     = document.getElementById('recent-searches');
+  if(!recent.length || document.getElementById('main-search').value) return;
+  el.innerHTML = '<span style="font-size:0.65rem;color:var(--text2);font-family:var(--font-body)">Recent:</span>' +
+    recent.map(r =>
+      `<a class="recent-tag" href="/explore?q=${encodeURIComponent(r)}"
+          onclick="addRecent('${r.replace(/'/g,"\\'")}')">
+        ${r}
+      </a>`
+    ).join('');
+}
+
+// Save search on submit
+document.getElementById('search-form').addEventListener('submit', () => {
+  const q = document.getElementById('main-search').value.trim();
+  if(q) addRecent(q);
+});
+
+// ── Live Suggestions ──────────────────────────────────────────
+let sugTimer;
+
+async function onSearchInput(val){
+  clearTimeout(sugTimer);
+  const recent = document.getElementById('recent-searches');
+  if(recent) recent.innerHTML = '';
+
+  if(!val || val.length < 2){
+    hideSuggestions();
+    if(!val) renderRecent();
+    return;
+  }
+
+  sugTimer = setTimeout(async () => {
+    try{
+      const res  = await fetch('/api/search?q=' + encodeURIComponent(val));
+      const data = await res.json();
+      renderSuggestions(data, val);
+    } catch(e){ hideSuggestions(); }
+  }, 250);
+}
+
+function renderSuggestions(data, q){
+  const el = document.getElementById('suggestions');
+  let html = '';
+
+  if(data.projects && data.projects.length){
+    html += '<div class="sug-section">';
+    html += '<div class="sug-title">Projects</div>';
+    data.projects.forEach(p => {
+      html += `<a href="/project/${p.id}" class="sug-item">
+        <span class="tag tag-${p.category}" style="pointer-events:none;font-size:0.58rem">${p.category}</span>
+        <span>${highlight(p.title, q)}</span>
+      </a>`;
+    });
+    html += '</div>';
+  }
+
+  if(data.users && data.users.length){
+    html += '<div class="sug-section">';
+    html += '<div class="sug-title">Developers</div>';
+    data.users.forEach(u => {
+      const av = u.avatar
+        ? `<img src="/static/uploads/${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+        : u.username[0].toUpperCase();
+      html += `<a href="/profile/${u.username}" class="sug-item">
+        <div class="avatar" style="width:24px;height:24px;font-size:0.6rem;overflow:hidden;padding:0;flex-shrink:0">${av}</div>
+        <span>${highlight(u.username, q)}</span>
+      </a>`;
+    });
+    html += '</div>';
+  }
+
+  if(data.tags && data.tags.length){
+    html += '<div class="sug-section">';
+    html += '<div class="sug-title">Tags</div>';
+    html += '<div style="padding:6px 14px;display:flex;gap:6px;flex-wrap:wrap">';
+    data.tags.forEach(t => {
+      html += `<a href="/explore?tag=${t}" class="tag tag-general">#${t}</a>`;
+    });
+    html += '</div></div>';
+  }
+
+  if(!html){
+    html = '<div style="padding:12px 14px;font-size:0.78rem;color:var(--text2);font-family:var(--font-body)">No results found</div>';
+  }
+
+  el.innerHTML = html;
+  el.classList.add('show');
+}
+
+function highlight(text, query){
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if(idx < 0) return text;
+  return text.substring(0, idx) +
+    `<strong style="color:var(--cyan)">${text.substring(idx, idx+query.length)}</strong>` +
+    text.substring(idx + query.length);
+}
+
+function hideSuggestions(){
+  document.getElementById('suggestions').classList.remove('show');
+}
+
+function onSearchKey(e){
+  if(e.key === 'Escape') hideSuggestions();
+}
+
+// Close suggestions on outside click
+document.addEventListener('click', e => {
+  if(!document.getElementById('search-wrap').contains(e.target)){
+    hideSuggestions();
+  }
+});
+
+// ── Keyboard shortcut: / to focus search ─────────────────────
+document.addEventListener('keydown', e => {
+  if(e.key === '/' &&
+     e.target.tagName !== 'INPUT' &&
+     e.target.tagName !== 'TEXTAREA'){
+    e.preventDefault();
+    document.getElementById('main-search').focus();
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────
+renderRecent();
+
+// If there's an active search, save it
+const currentQ = new URLSearchParams(window.location.search).get('q');
+if(currentQ) addRecent(currentQ);
+</script>
 {% endblock %}

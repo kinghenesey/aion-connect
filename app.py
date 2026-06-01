@@ -128,24 +128,52 @@ def home():
 def explore():
     tag    = request.args.get("tag", "")
     search = request.args.get("q", "")
+    sort   = request.args.get("sort", "latest")
     page   = request.args.get("page", 1, type=int)
 
     query = Project.query
 
     if tag:
         query = query.filter(Project.tags.contains(tag))
+
     if search:
         query = query.filter(
             Project.title.contains(search) |
-            Project.description.contains(search)
+            Project.description.contains(search) |
+            Project.code.contains(search) |
+            Project.tags.contains(search) |
+            Project.category.contains(search)
         )
 
-    projects = query.order_by(
-        Project.created_at.desc()
-    ).paginate(page=page, per_page=16, error_out=False)
+    # Sort
+    if sort == "popular":
+        projects = query.all()
+        projects.sort(key=lambda p: p.like_count, reverse=True)
+        total    = len(projects)
+        projects = projects[(page-1)*16: page*16]
+    elif sort == "trending":
+        projects = query.all()
+        projects.sort(key=lambda p: p.views, reverse=True)
+        total    = len(projects)
+        projects = projects[(page-1)*16: page*16]
+    else:
+        paginated = query.order_by(
+            Project.created_at.desc()
+        ).paginate(page=page, per_page=16, error_out=False)
+        projects = paginated.items
+        total    = paginated.total
 
+    # Also search users if query exists
+    matching_users = []
+    if search:
+        matching_users = User.query.filter(
+            User.username.contains(search) |
+            User.bio.contains(search)
+        ).limit(3).all()
+
+    # Popular tags
     all_projects = Project.query.all()
-    tag_counts = {}
+    tag_counts   = {}
     for p in all_projects:
         for t in p.tag_list:
             tag_counts[t] = tag_counts.get(t, 0) + 1
@@ -154,12 +182,57 @@ def explore():
     )[:15]
 
     return render_template("explore.html",
-        projects=projects.items,
+        projects=projects,
         popular_tags=popular_tags,
         current_tag=tag,
         search=search,
-        total=projects.total
+        current_sort=sort,
+        total=total,
+        matching_users=matching_users
     )
+
+@main.route("/api/search")
+def search_api():
+    """Live search suggestions as user types."""
+    q = request.args.get("q", "").strip()
+    if not q or len(q) < 2:
+        return jsonify({"projects": [], "users": [], "tags": []})
+
+    # Projects
+    projects = Project.query.filter(
+        Project.title.contains(q) |
+        Project.tags.contains(q) |
+        Project.category.contains(q)
+    ).limit(5).all()
+
+    # Users
+    users = User.query.filter(
+        User.username.contains(q)
+    ).limit(3).all()
+
+    # Tags
+    all_projects = Project.query.all()
+    tag_counts   = {}
+    for p in all_projects:
+        for t in p.tag_list:
+            if q.lower() in t.lower():
+                tag_counts[t] = tag_counts.get(t, 0) + 1
+    tags = sorted(tag_counts.items(),
+                  key=lambda x: x[1], reverse=True)[:4]
+
+    return jsonify({
+        "projects": [
+            {"id": p.id, "title": p.title,
+             "category": p.category}
+            for p in projects
+        ],
+        "users": [
+            {"username": u.username,
+             "avatar": u.avatar or ""}
+            for u in users
+        ],
+        "tags": [t[0] for t in tags]
+    })
 
 
 # ── Project Detail ────────────────────────────────────────────
